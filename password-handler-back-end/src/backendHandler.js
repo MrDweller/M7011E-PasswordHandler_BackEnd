@@ -1,8 +1,25 @@
 const { rsaEncryption } = require('./crypto/rsaEncryption');
 const RsaEncryption = require('./crypto/rsaEncryption');
 const fs = require('fs');
+const MySQL = require('mysql');
 
 class BackEndManager {
+    constructor() {
+        let config = JSON.parse(fs.readFileSync("./src/config.json"));
+        this.dbConn = MySQL.createConnection({
+            host: config["databaseConnection"]["host"],
+            user: config["databaseConnection"]["user"],
+            password: config["databaseConnection"]["password"],
+            database: config["databaseConnection"]["database"]
+        });
+        this.dbConn.connect((err) => {
+            if (err) {
+                console.log("Can't connect to the database!");
+                process.exit(1);
+            }
+            console.log("Connected to the database!");
+        });
+    }
     
 
     generateServerKeys(){

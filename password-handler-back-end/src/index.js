@@ -1,7 +1,12 @@
 const PasswordHandlerApi = require("./backend_api/PasswordHandlerApi");
+const DataBaseConnection = require("./databaseCommunication/DataBaseConnection");
+const fs = require('fs');
 
-function main(args) {
-    passwordHandlerApi = new PasswordHandlerApi(args[0], args[1]);
+function main() {
+    let config = JSON.parse(fs.readFileSync("./src/config.json"));
+    passwordHandlerApi = new PasswordHandlerApi(config["serverSettings"]["host"], config["serverSettings"]["port"]);
+    
+
     passwordHandlerApi.start();
 }
 
