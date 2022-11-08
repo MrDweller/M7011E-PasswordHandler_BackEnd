@@ -1,4 +1,6 @@
 env/
+password_handler.sql
+secret_key.txt
 
 # Django #
 *.log
