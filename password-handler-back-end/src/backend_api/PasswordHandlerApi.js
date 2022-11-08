@@ -8,7 +8,6 @@ class PasswordHandlerApi {
 
         this.expressApi = express();
         this.expressApi.use(bodyParser.json());
-        this.backEndHandler = new BackEndHandler();
         
 
     }
@@ -25,12 +24,33 @@ class PasswordHandlerApi {
     }
 
     #listenForApiRequests() {
+        let backEndHandler = new BackEndHandler();
         this.expressApi.get('/available', function (request, response) {
             try {
                 var responseBody = {};
                 responseBody["status"] = true;
 
                 response.status(200).send(responseBody);
+            } catch (error) {
+                console.log(error);
+                response.status(400).end();
+            }
+        });
+
+        this.expressApi.post('/addUser', function (request, response) {
+            try {
+                console.log(request.body);
+
+                
+                backEndHandler.addUser(request.body, (data) => {
+                    console.log(data);
+
+                    var responseBody = {};
+                    responseBody["status"] = data;
+
+                    response.status(200).send(responseBody);
+                });
+                
             } catch (error) {
                 console.log(error);
                 response.status(400).end();
