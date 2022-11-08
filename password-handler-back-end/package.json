@@ -1,0 +1,23 @@
+{
+  "name": "password-handler-back-end",
+  "version": "1.0.0",
+  "description": "Back end for password handler, talks with the front website and the data base.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MrDweller/M7011E-PasswordHandler_BackEnd.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MrDweller/M7011E-PasswordHandler_BackEnd/issues"
+  },
+  "homepage": "https://github.com/MrDweller/M7011E-PasswordHandler_BackEnd#readme",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
