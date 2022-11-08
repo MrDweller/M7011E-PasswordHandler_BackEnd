@@ -2,6 +2,7 @@ const { rsaEncryption } = require('./crypto/rsaEncryption');
 const RsaEncryption = require('./crypto/rsaEncryption');
 const fs = require('fs');
 const MySQL = require('mysql');
+const DataBaseQueries = require('./DataBaseQueries');
 
 class BackEndManager {
     constructor() {
@@ -19,6 +20,7 @@ class BackEndManager {
             }
             console.log("Connected to the database!");
         });
+
     }
     
 
