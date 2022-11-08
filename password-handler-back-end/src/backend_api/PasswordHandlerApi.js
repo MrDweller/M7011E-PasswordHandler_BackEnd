@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-
+const BackEndHandler = require('../backendHandler')
 class PasswordHandlerApi {
     constructor(host, port) {
         this.host = host;
@@ -8,6 +8,8 @@ class PasswordHandlerApi {
 
         this.expressApi = express();
         this.expressApi.use(bodyParser.json());
+        this.backEndHandler = new BackEndHandler();
+        
 
     }
 
@@ -16,9 +18,10 @@ class PasswordHandlerApi {
         let port = this.port;
         this.server = this.expressApi.listen(this.port, this.host, function () {
             console.log("PasswordHandlerApi started at: " + host + ":" + port);
-        });
+        });        
 
         this.#listenForApiRequests();
+
     }
 
     #listenForApiRequests() {
