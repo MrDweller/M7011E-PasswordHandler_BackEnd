@@ -3,6 +3,7 @@ const RsaEncryption = require('./crypto/rsaEncryption');
 const fs = require('fs');
 const MySQL = require('mysql');
 const DataBaseQueries = require('./DataBaseQueries');
+const { response } = require('express');
 
 class BackEndManager {
     constructor() {
@@ -20,16 +21,14 @@ class BackEndManager {
             }
             console.log("Connected to the database!");
         });
-
+        
     }
     
 
     generateServerKeys(){
         let rsaKeys = RsaEncryption.generateRSA();
         let publicKey = rsaKeys[RsaEncryption.PUBLIC_RSA_KEY_IDENTIFIER];
-        let privateKey = rsaKeys[RsaEncryption.PRIVATE_RSA_KEY_IDENTIFIER];
-        let contents = JSON.stringify(rsaKeys);
-        
+        let privateKey = rsaKeys[RsaEncryption.PRIVATE_RSA_KEY_IDENTIFIER];        
         fs.writeFileSync('./publicServerKey', publicKey, err => {
         if (err) {
             console.error(err);
