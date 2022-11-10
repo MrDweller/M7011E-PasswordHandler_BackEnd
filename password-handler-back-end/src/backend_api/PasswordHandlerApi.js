@@ -36,7 +36,7 @@ class PasswordHandlerApi {
         let backEndHandler = new BackEndHandler();
         this.expressApi.get('/available', function (request, response) {
             try {
-                var responseBody = {};
+                let responseBody = {};
                 responseBody["status"] = true;
 
                 response.status(200).send(responseBody);
@@ -54,7 +54,7 @@ class PasswordHandlerApi {
                 backEndHandler.addUser(request.body, (data) => {
                     console.log(data);
 
-                    var responseBody = {};
+                    let responseBody = {};
                     responseBody["status"] = data;
 
                     response.status(200).send(responseBody);
@@ -62,6 +62,21 @@ class PasswordHandlerApi {
                 
             } catch (error) {
                 console.log(error);
+                response.status(400).end();
+            }
+        });
+
+        this.expressApi.post('/authenticate', function(request, response){
+            try {
+                console.log(request.body);
+                backEndHandler.authenticateUser(request.body, (data) => {
+                    console.log(data);
+                    let responseBody = {};
+                    responseBody["status"] = data;
+                    response.status(200).send(responseBody);
+                });
+            } catch(error){
+                console.log(error)
                 response.status(400).end();
             }
         });

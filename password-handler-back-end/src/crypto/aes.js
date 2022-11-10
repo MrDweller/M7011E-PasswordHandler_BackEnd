@@ -11,8 +11,8 @@ class AesEncryption {
     }
 
     static encryptData(decryptedData, key, iv) {
-        const cipher = crypto.createCipheriv(AesEncryption.#AES_ALGORITHM, key, iv);
-        let encryptedData = Buffer.concat([cipher.update(decryptedData), cipher.final()]);
+        const cipher = crypto.createCipheriv(AesEncryption.#AES_ALGORITHM,  key, iv);
+        let encryptedData = Buffer.concat([cipher.update( decryptedData), cipher.final()]);
         return encryptedData;
     }
 

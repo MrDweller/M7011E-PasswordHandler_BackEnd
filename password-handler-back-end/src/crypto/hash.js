@@ -2,8 +2,8 @@ const crypto = require('crypto');
 
 class HashFunction {
     static hashPlainText(plainText, salt) {
-        let hash = crypto.scryptSync(plainText, salt, 32);
-        return hash
+        let hash = crypto.scryptSync( plainText, salt, 32);
+        return hash;
     }
 
     static generateSalt() {

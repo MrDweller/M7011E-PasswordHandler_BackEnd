@@ -23,21 +23,24 @@ class BackEndManager {
             }
             console.log("Connected to the database!");
         });
-        
+
+
+
+
     }
-    
+
     #readPrivateRsaKey() {
         return fs.readFileSync('./privateServerKey');
     }
 
-    generateServerKeys(){
+    generateServerKeys() {
         let rsaKeys = RsaEncryption.generateRSA();
         let publicKey = rsaKeys[RsaEncryption.PUBLIC_RSA_KEY_IDENTIFIER];
-        let privateKey = rsaKeys[RsaEncryption.PRIVATE_RSA_KEY_IDENTIFIER];        
+        let privateKey = rsaKeys[RsaEncryption.PRIVATE_RSA_KEY_IDENTIFIER];
         fs.writeFileSync('./publicServerKey', publicKey, err => {
-        if (err) {
-            console.error(err);
-        }
+            if (err) {
+                console.error(err);
+            }
         });
         fs.writeFileSync('./privateServerKey', privateKey, err => {
             if (err) {
@@ -47,17 +50,17 @@ class BackEndManager {
 
     }
 
-    getPublicServerKey(){
+    getPublicServerKey() {
         return fs.readFileSync('./publicServerKey');
     }
 
     addUser(jsonData, callback) {
         // let secretData = jsonData["secretData"];
         // let publicData = jsonData["publicData"];
-    
+
         // let privateRsaKey = this.#readPrivateRsaKey();
         // let decryptedData = RsaEncryption.rsaDecryptJsonObject(privateRsaKey, secretData);
-        
+
         let decryptedData = jsonData;
 
         let userName = decryptedData["uname"];
@@ -72,11 +75,66 @@ class BackEndManager {
 
         let hashed_masterpwd = Hash.hashPlainText(masterpwd, firstSalt);
 
-        let encryptedKey = AES.encryptData(key, hashed_masterpwd, ivKey);
+        let encryptedKey = AES.encryptData(key, hashed_masterpwd, ivKey);        
         let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, secondSalt);
-
+      
         DataBaseQueries.addUser(this.dbConn, userName, email, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, ivKey, callback);
     }
+
+    authenticateUser(jsonData, callback) {
+        let decryptedData = jsonData;
+        let uname = decryptedData["uname"];
+        let email = decryptedData["email"];
+        let masterpwd = decryptedData["password"];
+
+        if (uname === null) {
+            DataBaseQueries.getUserSalts(this.dbConn, email, (result) => {
+                console.log(result);
+                let salts = result;
+                let hashed_masterpwd = Hash.hashPlainText(masterpwd, salts[0]["salt_1"]);
+
+                DataBaseQueries.getUserForLoginAuthentication(this.dbConn, email, (result2) => {
+                    console.log(result2);
+                    let db_hashedhashed_pwd = result2[0]["hashedhashed_masterpwd"];
+                    let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, salts[0]["salt_2"]);
+                    if (db_hashedhashed_pwd.toString() === hashedhashed_masterpwd.toString()) {
+                        callback(true)
+                    } else {
+                        callback(false)
+                    }
+                })
+            })
+        } else {
+            DataBaseQueries.getUserSalts(this.dbConn, uname, (result) => {
+                let salts = result;
+                let hashed_masterpwd = Hash.hashPlainText(masterpwd, salts[0]["salt_1"]);
+
+                DataBaseQueries.getUserForLoginAuthentication(this.dbConn, uname, (result2) => {
+                    let db_hashedhashed_pwd = result2[0]["hashedhashed_masterpwd"];
+                    let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, salts[0]["salt_2"]);
+                    if (db_hashedhashed_pwd.toString() === hashedhashed_masterpwd.toString()) {
+                        callback(true)
+                    } else {
+                        callback(false)
+                    }
+                })
+
+            })
+        }
+
+
+
+
+
+
+
+
+
+
+
+    }
+
+    
 
 }
 
