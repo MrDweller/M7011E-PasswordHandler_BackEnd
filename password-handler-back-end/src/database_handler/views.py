@@ -50,14 +50,57 @@ class UsersApiView(APIView):
                 serializer.save()
                 return Response(status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    def delete(self):
-        return
 
-    def update(self, request):
-        if request.method == 'POST':
-            serializer = UsersSerializer(data=request.data)
-            if serializer.is_valid(raise_exception=True):
-                serializer.save()
-                return Response(status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class RemoveUserApiView(APIView):
+
+    serializer_class = RemoveUserSerializer
+
+    def post(self, request):
+        if request.POST:
+            try:
+                userObj = Users.objects.get(uname=request.data.get('uname'))
+            except Users.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            userObj.delete()    
+            return Response(status=status.HTTP_200_OK)
+
+class RemoveAdminApiView(APIView):
+
+    serializer_class = RemoveAdminSerializer
+
+    def post(self, request):
+        if request.POST:
+            try:
+                adminObj = Admins.objects.get(uname=request.data.get('uname'))
+            except Admins.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            adminObj.delete()    
+            return Response(status=status.HTTP_200_OK)
+
+class RemoveFeedbackApiView(APIView):
+
+    serializer_class = RemoveFeedbackSerializer
+
+    def post(self, request):
+        if request.POST:
+            try:
+                feedbackObj = Feedback.objects.get(id=request.data.get('id'))
+            except Feedback.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            feedbackObj.delete()    
+            return Response(status=status.HTTP_200_OK)
+
+class RemoveIpsApiView(APIView):
+
+    serializer_class = RemoveIpsSerializer
+
+    def post(self, request):
+        if request.POST:
+            try:
+                ipsObjs = Ips.objects.filter(uname=request.data.get('uname'))
+                print(ipsObjs)
+            except Feedback.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            ipsObjs.delete()  
+            return Response(status=status.HTTP_200_OK)
+        
