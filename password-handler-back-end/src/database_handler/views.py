@@ -8,6 +8,9 @@ from rest_framework import status
 from .models import *
 from .serializers import *
 
+from crypto.hash import hash_password
+from crypto.aes import *
+
 # Create your views here.
 
 def home(request):
@@ -25,8 +28,27 @@ class UsersApiView(APIView):
 
     def post(self, request):
         if request.method == 'POST':
-            serializer = UsersSerializer(data=request.data)
-            print(request.data)
+
+            temp_dict = {}
+            temp_dict = request.data.copy()
+            hashed_password = hash_password(temp_dict.get("hashedhashed_masterpwd"))
+            hashed_hashed_password = hash_password(hashed_password[0])
+
+            key = generate_key()
+            iv = generate_iv()
+
+            temp_dict['hashedhashed_masterpwd'] = hashed_hashed_password[0]
+            temp_dict['salt_1'] = hashed_password[1]
+            temp_dict['salt_2'] = hashed_hashed_password[1]
+                            
+            # encrypting key
+            temp_dict['encrypted_key'] = encrypt_data(key, hashed_password[0], iv)
+            temp_dict['iv'] = iv
+            # temp_dict['encrypted_key'] = "BAJS"
+            # temp_dict['iv'] = "KISS"
+
+
+            serializer = UsersSerializer(data=temp_dict)
             
             if serializer.is_valid(raise_exception=True):
                 serializer.save()

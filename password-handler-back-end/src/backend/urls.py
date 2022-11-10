@@ -20,6 +20,6 @@ from database_handler import views
 
 urlpatterns = [
     path('', views.home, name='home'),
-    path('db/', include('database_handler.urls')),
+    path('', include('database_handler.urls')),
     # path('admin/', admin.site.urls),
 ]

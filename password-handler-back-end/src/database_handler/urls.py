@@ -3,5 +3,5 @@ from . import views
 
 app_name = 'database_handler'
 urlpatterns = [
-    path('users/', views.UsersApiView.as_view(), name="users"),
+    path('addUser/', views.UsersApiView.as_view(), name="users"),
 ]
