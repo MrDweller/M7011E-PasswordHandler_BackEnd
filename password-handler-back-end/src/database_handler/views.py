@@ -1,5 +1,4 @@
 from django.shortcuts import render
-
 from django.http import HttpResponse
 
 from rest_framework.views import APIView
@@ -44,9 +43,6 @@ class UsersApiView(APIView):
             # encrypting key
             temp_dict['encrypted_key'] = encrypt_data(key, hashed_password[0], iv)
             temp_dict['iv'] = iv
-            # temp_dict['encrypted_key'] = "BAJS"
-            # temp_dict['iv'] = "KISS"
-
 
             serializer = UsersSerializer(data=temp_dict)
             
