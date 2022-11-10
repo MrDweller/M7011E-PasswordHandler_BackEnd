@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const bodyParser = require('body-parser');
 const BackEndHandler = require('../backendHandler')
 class PasswordHandlerApi {
@@ -9,12 +10,20 @@ class PasswordHandlerApi {
         this.expressApi = express();
         this.expressApi.use(bodyParser.json());
         
+        var corsOptions = {
+            origin: 'http://localhost:3000',
+            optionsSuccessStatus: 200 // For legacy browser support
+        }
+        
+        this.expressApi.use(cors(corsOptions));
 
     }
 
     start() {
         let host = this.host;
         let port = this.port;
+        
+
         this.server = this.expressApi.listen(this.port, this.host, function () {
             console.log("PasswordHandlerApi started at: " + host + ":" + port);
         });        
@@ -37,7 +46,7 @@ class PasswordHandlerApi {
             }
         });
 
-        this.expressApi.post('/addUser', function (request, response) {
+        this.expressApi.post('/user', function (request, response) {
             try {
                 console.log(request.body);
 

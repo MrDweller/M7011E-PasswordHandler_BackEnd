@@ -60,7 +60,7 @@ class BackEndManager {
         
         let decryptedData = jsonData;
 
-        let userName = decryptedData["userName"];
+        let userName = decryptedData["uname"];
         let email = decryptedData["email"];
         let masterpwd = decryptedData["password"];
 
