@@ -98,9 +98,47 @@ class RemoveIpsApiView(APIView):
         if request.POST:
             try:
                 ipsObjs = Ips.objects.filter(uname=request.data.get('uname'))
-                print(ipsObjs)
             except Feedback.DoesNotExist:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             ipsObjs.delete()  
             return Response(status=status.HTTP_200_OK)
         
+class ChangeUserPasswordApiView(APIView):
+
+    serializer_class = ChangePasswordUserSerializer
+  
+    def get(self, request):
+        if request.method == 'GET':
+            data = Users.objects.all()
+            serializer = UsersSerializer(data, context={'request': request}, many=True)
+            return Response(serializer.data)
+
+    def post(self, request):
+        if request.POST:
+            try:
+                userObj = Ips.objects.filter(uname=request.data.get('uname'))
+            except Feedback.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            temp_dict = {}
+            temp_dict = request.data.copy()
+            hashed_password = hash_password(temp_dict.get("hashedhashed_masterpwd"))
+            hashed_hashed_password = hash_password(hashed_password[0])
+
+            new_key = generate_key()
+            new_iv = generate_iv()
+
+            temp_dict['hashedhashed_masterpwd'] = hashed_hashed_password[0]
+            temp_dict['salt_1'] = hashed_password[1]
+            temp_dict['salt_2'] = hashed_hashed_password[1]
+                            
+            # encrypting key
+            temp_dict['encrypted_key'] = encrypt_data(key, hashed_password[0], iv)
+            temp_dict['iv'] = iv
+
+            serializer = UsersSerializer(data=temp_dict)
+            
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response(status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
