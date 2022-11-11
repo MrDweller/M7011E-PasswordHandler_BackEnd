@@ -74,3 +74,11 @@ class Users(models.Model):
     class Meta:
         managed = False
         db_table = 'users'
+
+class UserChangePasswordApi(models.Model):
+    uname = models.CharField(primary_key=True, max_length=128)
+    newPassword = models.CharField(max_length=32)
+
+    class Meta:
+        managed = False
+        db_table = 'users'
