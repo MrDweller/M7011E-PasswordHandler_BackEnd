@@ -83,44 +83,26 @@ class BackEndManager {
 
     authenticateUser(jsonData, callback) {
         let decryptedData = jsonData;
-        let uname = decryptedData["uname"];
-        let email = decryptedData["email"];
+        let identification = decryptedData["identification"];
         let masterpwd = decryptedData["password"];
 
-        if (uname === null) {
-            DataBaseQueries.getUserSalts(this.dbConn, email, (result) => {
-                console.log(result);
-                let salts = result;
-                let hashed_masterpwd = Hash.hashPlainText(masterpwd, salts[0]["salt_1"]);
+       
+        DataBaseQueries.getUserSalts(this.dbConn, identification, (result) => {
+            console.log(result);
+            let salts = result;
+            let hashed_masterpwd = Hash.hashPlainText(masterpwd, salts[0]["salt_1"]);
 
-                DataBaseQueries.getUserForLoginAuthentication(this.dbConn, email, (result2) => {
-                    console.log(result2);
-                    let db_hashedhashed_pwd = result2[0]["hashedhashed_masterpwd"];
-                    let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, salts[0]["salt_2"]);
-                    if (db_hashedhashed_pwd.toString() === hashedhashed_masterpwd.toString()) {
-                        callback(true)
-                    } else {
-                        callback(false)
-                    }
-                })
+            DataBaseQueries.getUserForLoginAuthentication(this.dbConn, identification, (result2) => {
+                console.log(result2);
+                let db_hashedhashed_pwd = result2[0]["hashedhashed_masterpwd"];
+                let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, salts[0]["salt_2"]);
+                if (db_hashedhashed_pwd.toString() === hashedhashed_masterpwd.toString()) {
+                    callback(true)
+                } else {
+                    callback(false)
+                }
             })
-        } else {
-            DataBaseQueries.getUserSalts(this.dbConn, uname, (result) => {
-                let salts = result;
-                let hashed_masterpwd = Hash.hashPlainText(masterpwd, salts[0]["salt_1"]);
-
-                DataBaseQueries.getUserForLoginAuthentication(this.dbConn, uname, (result2) => {
-                    let db_hashedhashed_pwd = result2[0]["hashedhashed_masterpwd"];
-                    let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, salts[0]["salt_2"]);
-                    if (db_hashedhashed_pwd.toString() === hashedhashed_masterpwd.toString()) {
-                        callback(true)
-                    } else {
-                        callback(false)
-                    }
-                })
-
-            })
-        }
+        })
 
 
 
