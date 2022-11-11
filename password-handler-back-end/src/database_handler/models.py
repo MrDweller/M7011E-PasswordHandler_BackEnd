@@ -84,12 +84,3 @@ class UserApi(models.Model):
     uname = models.CharField(primary_key=True, max_length=128)
     email = models.CharField(unique=True, max_length=128)
     password = models.CharField(max_length=32)
-
-
-class UserChangePasswordApi(models.Model):
-    uname = models.CharField(primary_key=True, max_length=128)
-    newPassword = models.CharField(max_length=32)
-
-    class Meta:
-        managed = False
-        db_table = 'users'

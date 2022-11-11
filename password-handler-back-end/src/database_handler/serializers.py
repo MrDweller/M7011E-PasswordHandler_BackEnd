@@ -58,8 +58,3 @@ class RemoveIpsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ips
         fields = ["uname"]
-
-class ChangePasswordUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserChangePasswordApi
-        fields = ["uname", "newPassword"]
