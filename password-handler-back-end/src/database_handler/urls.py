@@ -8,4 +8,5 @@ urlpatterns = [
     path('removeAdmin/', views.RemoveAdminApiView.as_view(), name="removeAdmin"),
     path('removeFeedback/', views.RemoveFeedbackApiView.as_view(), name="removeFeedback"),
     path('removeIps/', views.RemoveIpsApiView.as_view(), name="removeIps"),
+    path('changeUserPassword/', views.ChangeUserPasswordApiView.as_view(), name="changeUserPassword"),
 ]
