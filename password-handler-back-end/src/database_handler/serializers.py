@@ -6,12 +6,6 @@ class UserSerializerApi(serializers.ModelSerializer):
         model = UserApi
         fields = ["uname", "email", "password"]
 
-# class UsersSerializerApi(serializers.ModelSerializer):
-#     class Meta:
-#         model = UsersApi
-#         fields = ["uname", "email", "password"]
-
-
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = Users
@@ -32,13 +26,40 @@ class SuperAdminsSerializer(serializers.ModelSerializer):
         model = SuperAdmins
         fields = ["uname", "email", "hashed_pwd", "salt"]
 
+        model = Users
+        fields = ["uname", "email", "hashedhashed_masterpwd", "salt_1", "salt_2", "encrypted_key", "iv"]
 
+class FeedbackSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Feedback
+        fields = ["id", "uname", "feedback"]
+        
 class IpsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ips
         fields = ["uname", "ip"]
+        
+class RemoveUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Users
+        fields = ["uname"]
 
-class FeedbacksSerializer(serializers.ModelSerializer):
+class RemoveAdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Admins
+        fields = ["uname"]
+
+class RemoveFeedbackSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback
-        fields = ["id", "uname", "feedback"]
+        fields = ["id"]
+
+class RemoveIpsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ips
+        fields = ["uname"]
+
+class ChangePasswordUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserChangePasswordApi
+        fields = ["uname", "newPassword"]
