@@ -23,9 +23,11 @@ class AdminsApi(models.Model):
     email = models.CharField(unique=True, max_length=128)
     password = models.CharField(max_length=32)
 
+class FeedbackApi(models.Model):
+    id = models.IntegerField(primary_key=True)
+
 class Feedback(models.Model):
     id = models.BigAutoField(primary_key=True)
-    uname = models.ForeignKey('Users', models.DO_NOTHING, db_column='uname')
     feedback = models.CharField(max_length=256)
 
     class Meta:

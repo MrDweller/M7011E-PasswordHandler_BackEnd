@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from . models import *
 
-class UserSerializerApi(serializers.ModelSerializer):
+class UserApiSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserApi
         fields = ["uname", "email", "password"]
@@ -39,7 +39,7 @@ class SuperAdminsSerializerApi(serializers.ModelSerializer):
 class FeedbackSerializer(serializers.ModelSerializer):
     class Meta:
         model = Feedback
-        fields = ["id", "uname", "feedback"]
+        fields = ["id", "feedback"]
         
 class IpsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -66,9 +66,9 @@ class RemoveAdminSerializer(serializers.ModelSerializer):
         model = Admins
         fields = ["uname"]
 
-class RemoveFeedbackSerializer(serializers.ModelSerializer):
+class RemoveFeedbackApiSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Feedback
+        model = FeedbackApi
         fields = ["id"]
 
 class RemoveIpsSerializer(serializers.ModelSerializer):
