@@ -240,6 +240,19 @@ class RemoveAdminApiView(APIView):
             adminObj.delete()    
             return Response(status=status.HTTP_200_OK)
 
+class RemoveFeedbackApiView(APIView):
+
+    serializer_class = RemoveFeedbackSerializer
+
+    def post(self, request):
+        if request.POST:
+            try:
+                feedbackObj = Feedback.objects.get(id=request.data.get('id'))
+                feedbackObj.delete()    
+                return Response(status=status.HTTP_200_OK)
+            except Feedback.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
 class RemoveIpsApiView(APIView):
 
     serializer_class = IpsSerializer
