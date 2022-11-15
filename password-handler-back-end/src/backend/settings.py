@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'corsheaders',
 
     # Django apps
-    # 'django.contrib.admin',
+    # 'django.contrib.admin', # default django admin page.
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',

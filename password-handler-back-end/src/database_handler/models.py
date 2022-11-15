@@ -34,14 +34,19 @@ class Feedback(models.Model):
         managed = False
         db_table = 'feedback'
 
+""" TODO: See views.py for its APIView """
 class Ips(models.Model):
-    uname = models.ForeignKey('Users', models.DO_NOTHING, db_column='uname')
-    ip = models.CharField(max_length=128)
+    uname = models.ForeignKey('Users', models.DO_NOTHING, db_column='uname',)  
+    ip = models.CharField(max_length=128,)
 
-    class Meta:
+    class Meta():
         managed = False
+
         db_table = 'ips'
-        unique_together = (('uname', 'ip'),)
+        constraints = [
+            models.UniqueConstraint(fields=['uname', 'ip'], name='siiiiir')
+        ]
+        # unique_together = (('uname', 'ip'),)
 
 
 class Passwords(models.Model):
@@ -57,7 +62,7 @@ class Passwords(models.Model):
 
 class PasswordsApi(models.Model):
     uname = models.OneToOneField('Users', models.DO_NOTHING, db_column='uname', primary_key=True)
-    yourPassword = models.CharField(max_length=256)
+    your_password = models.CharField(max_length=256)
     website_url = models.CharField(max_length=128)
     website_uname = models.CharField(max_length=128)
     password = models.CharField(max_length=256)
@@ -103,5 +108,5 @@ class UserApi(models.Model):
 
 class UserChangePasswordApi(models.Model):
     uname = models.CharField(primary_key=True, max_length=128)
-    oldPassword = models.CharField(max_length=32)
-    newPassword = models.CharField(max_length=32)
+    old_password = models.CharField(max_length=32)
+    new_password = models.CharField(max_length=32)
