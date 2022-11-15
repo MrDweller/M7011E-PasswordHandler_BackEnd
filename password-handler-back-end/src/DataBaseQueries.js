@@ -9,7 +9,7 @@ class DataBaseQueries {
                 encrypted_key.toString('base64'),
                 iv.toString('base64')]
         ];
-        dbConn.query(sql, [values], (err) => {
+        dbConn.query(sql, [values], (err, result) => {
             if (err) {
                 console.log(err);
                 callback(false);
