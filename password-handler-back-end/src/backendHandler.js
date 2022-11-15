@@ -77,6 +77,7 @@ class BackEndManager {
 
         let encryptedKey = AES.encryptData(key, hashed_masterpwd, ivKey);        
         let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, secondSalt);
+        console.log("UNAME addUser() " + userName);
       
         DataBaseQueries.addUser(this.dbConn, userName, email, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, ivKey, callback);
     }
@@ -97,9 +98,12 @@ class BackEndManager {
                 let db_hashedhashed_pwd = result2[0]["hashedhashed_masterpwd"];
                 let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, salts[0]["salt_2"]);
                 if (db_hashedhashed_pwd.toString() === hashedhashed_masterpwd.toString()) {
-                    callback(true)
+                    DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (result3) => {
+                        console.log(result3[0]["uname"]);
+                        callback(result3[0]["uname"]);
+                    })
                 } else {
-                    callback(false)
+                    callback(null)
                 }
             })
         })

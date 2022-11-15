@@ -48,7 +48,7 @@ class PasswordHandlerApi {
 
         this.expressApi.post('/user', function (request, response) {
             try {
-                console.log(request.body);
+                console.log("request.body: " + request.body);
 
                 
                 backEndHandler.addUser(request.body, (data) => {

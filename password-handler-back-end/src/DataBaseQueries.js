@@ -1,6 +1,7 @@
 class DataBaseQueries {
     static addUser(dbConn, uname, email, hashedhashed_masterpwd, salt_1, salt_2, encrypted_key, iv, callback) {
         var sql = "INSERT INTO `users` VALUES ? ";
+        console.log("UNAME querie " + uname)
         var values = [
             [uname, email,
                 hashedhashed_masterpwd.toString('base64'),
@@ -315,6 +316,21 @@ class DataBaseQueries {
                 console.log("Number affected rows " + result.affectedRows);
                 result[0]["salt_1"] = Buffer.from(result[0]["salt_1"], "base64");
                 result[0]["salt_2"] = Buffer.from(result[0]["salt_2"], "base64");
+                callback(result);
+
+            }
+        });
+    }
+
+    static getUnameFromIdentification(dbConn, identification, callback) {
+        var sql = `SELECT uname FROM users WHERE users.uname = "${identification}" OR users.email = "${identification}"`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(false);
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
                 callback(result);
 
             }
