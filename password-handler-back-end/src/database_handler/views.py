@@ -18,7 +18,7 @@ def home(request):
 class UserApiView(APIView):
 
     # A new serializer is created for API input
-    serializer_class = UserSerializerApi
+    serializer_class = UserApiSerializer
   
     def post(self, request):
 
@@ -204,7 +204,7 @@ class RemoveAdminApiView(APIView):
 
 class RemoveFeedbackApiView(APIView):
 
-    serializer_class = RemoveFeedbackSerializer
+    serializer_class = RemoveFeedbackApiSerializer
 
     def post(self, request):
         if request.POST:
