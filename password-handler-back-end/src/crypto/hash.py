@@ -5,3 +5,8 @@ def hash_password(plaintext):
     plaintext_and_salt = plaintext + salt
     hashed_password = hashlib.sha256(plaintext_and_salt.encode()).hexdigest()[:32]
     return (hashed_password, salt)
+
+def hash_passwordSalt(plaintext, salt):
+    plaintext_and_salt = plaintext + salt
+    hashed_password = hashlib.sha256(plaintext_and_salt.encode()).hexdigest()[:32]
+    return hashed_password
