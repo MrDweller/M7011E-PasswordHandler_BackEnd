@@ -312,12 +312,15 @@ class DataBaseQueries {
                 console.log(err);
                 callback(false);
             }
-            else {
+            else if(result.length > 0){
                 console.log("Number affected rows " + result.affectedRows);
                 result[0]["salt_1"] = Buffer.from(result[0]["salt_1"], "base64");
                 result[0]["salt_2"] = Buffer.from(result[0]["salt_2"], "base64");
                 callback(result);
 
+            }
+            else {
+                callback(null);
             }
         });
     }

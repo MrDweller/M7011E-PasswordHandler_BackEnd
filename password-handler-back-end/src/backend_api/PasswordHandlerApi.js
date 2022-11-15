@@ -72,7 +72,7 @@ class PasswordHandlerApi {
                 backEndHandler.authenticateUser(request.body, (data) => {
                     console.log(data);
                     let responseBody = {};
-                    responseBody["status"] = data;
+                    responseBody["uname"] = data;
                     response.status(200).send(responseBody);
                 });
             } catch(error){

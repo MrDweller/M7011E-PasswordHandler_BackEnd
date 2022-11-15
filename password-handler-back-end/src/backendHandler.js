@@ -87,26 +87,41 @@ class BackEndManager {
         let identification = decryptedData["identification"];
         let masterpwd = decryptedData["password"];
 
-       
-        DataBaseQueries.getUserSalts(this.dbConn, identification, (result) => {
-            console.log(result);
-            let salts = result;
-            let hashed_masterpwd = Hash.hashPlainText(masterpwd, salts[0]["salt_1"]);
-
-            DataBaseQueries.getUserForLoginAuthentication(this.dbConn, identification, (result2) => {
-                console.log(result2);
-                let db_hashedhashed_pwd = result2[0]["hashedhashed_masterpwd"];
-                let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, salts[0]["salt_2"]);
-                if (db_hashedhashed_pwd.toString() === hashedhashed_masterpwd.toString()) {
-                    DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (result3) => {
-                        console.log(result3[0]["uname"]);
-                        callback(result3[0]["uname"]);
-                    })
-                } else {
-                    callback(null)
+        try {
+            DataBaseQueries.getUserSalts(this.dbConn, identification, (result) => {
+                if (result == null)
+                {
+                    callback(null);
+                    return;
                 }
-            })
-        })
+                console.log(result);
+                let salts = result;
+                let hashed_masterpwd = Hash.hashPlainText(masterpwd, salts[0]["salt_1"]);
+    
+                DataBaseQueries.getUserForLoginAuthentication(this.dbConn, identification, (result2) => {
+                    if (result2 == null)
+                    {
+                        callback(null);
+                        return;
+                    }
+                    console.log(result2);
+                    let db_hashedhashed_pwd = result2[0]["hashedhashed_masterpwd"];
+                    let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, salts[0]["salt_2"]);
+                    if (db_hashedhashed_pwd.toString() === hashedhashed_masterpwd.toString()) {
+                        DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (result3) => {
+                            console.log(result3[0]["uname"]);
+                            callback(result3[0]["uname"]);
+                        })
+                    } else {
+                        callback(null);
+                    }
+                });
+            });
+
+        } 
+        catch (error) {
+            callback(null);
+        }
 
 
 
