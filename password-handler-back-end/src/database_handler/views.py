@@ -1,9 +1,11 @@
 import codecs
 import json
-
 from crypto.aes import *
 from crypto.hash import *
+
 from django.db import connection  # default database connection
+from django.http import JsonResponse
+
 
 from rest_framework import status
 from rest_framework.response import Response
@@ -416,11 +418,17 @@ class LoginView(APIView):
 
     def post(self, request):
 
+
         if request.method == 'POST':
+            temp_dict = {}
+            temp_dict = request.data.copy()
+
             try:
-                user_object = Users.objects.get(uname=request.data.get('username_or_email'))
+                user_object = Users.objects.get(uname=request.data.get('identification'))
+                temp_dict['uname'] = request.data.get('identification')
             except Users.DoesNotExist:
-                user_object = Users.objects.get(email=request.data.get('username_or_email'))
+                user_object = Users.objects.get(email=request.data.get('identification'))
+                temp_dict['email'] = request.data.get('identification')
             except:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -430,5 +438,6 @@ class LoginView(APIView):
 
             if (masterpwd_hashedhashed != user_object.hashedhashed_masterpwd):
                 return Response(status=status.HTTP_409_CONFLICT)
-        
-            return Response(status=status.HTTP_200_OK)
+
+            serializer = UsersSerializer(user_object)
+            return Response(serializer.data, status=status.HTTP_200_OK)

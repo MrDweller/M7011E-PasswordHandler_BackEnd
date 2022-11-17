@@ -100,5 +100,5 @@ class ChangePasswordUserSerializer(serializers.ModelSerializer):
 class LoginApiSerializer(serializers.ModelSerializer):
     class Meta:
         model = LoginApi
-        fields = ["username_or_email", "password"]
+        fields = ["identification", "password"]
 

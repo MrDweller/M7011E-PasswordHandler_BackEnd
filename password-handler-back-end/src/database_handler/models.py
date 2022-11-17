@@ -118,5 +118,5 @@ class UserChangePasswordApi(models.Model):
 
 
 class LoginApi(models.Model):
-    username_or_email = models.CharField(primary_key=True, max_length=128)
+    identification = models.CharField(primary_key=True, max_length=128)
     password = models.CharField(max_length=128)
