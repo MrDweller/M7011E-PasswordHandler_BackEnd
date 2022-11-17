@@ -2,6 +2,7 @@ import codecs
 import json
 from crypto.aes import *
 from crypto.hash import *
+from crypto.generate import *
 
 from django.db import connection  # default database connection
 from django.http import JsonResponse
@@ -239,7 +240,7 @@ class NewWebsitePasswordsApiView(APIView):
             new_iv = generate_iv()
 
             decrypted_key = decrypt_data(key, masterpwd_hashed.encode(), iv)
-            encrypted_password = encrypt_data(temp_dict.get('password').encode(), decrypted_key, new_iv)
+            encrypted_password = encrypt_data(get_password(32), decrypted_key, new_iv)
 
             temp_dict['encrypted_pwd'] = encrypted_password.hex()
             temp_dict['iv'] = new_iv.hex()
@@ -401,7 +402,7 @@ class ChangeWebsitePasswordsApiView(APIView):
             iv_password = codecs.decode(password_object[-1], 'hex_codec')
 
             decrypted_key = decrypt_data(key, masterpwd_hashed.encode(), iv)
-            encrypted_password = encrypt_data(temp_dict.get('password').encode(), decrypted_key, iv_password)
+            encrypted_password = encrypt_data(get_password(32), decrypted_key, iv_password)
 
             # ORM did not work. Manually constructed a query for updating an existing password for a website.
             # TODO: Check for alternate solution or why ORM doesn't work
@@ -417,7 +418,6 @@ class LoginView(APIView):
     serializer_class = LoginApiSerializer
 
     def post(self, request):
-
 
         if request.method == 'POST':
             temp_dict = {}
@@ -440,4 +440,4 @@ class LoginView(APIView):
                 return Response(status=status.HTTP_409_CONFLICT)
 
             serializer = UsersSerializer(user_object)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.data, status=status.HTTP_200_OK) 

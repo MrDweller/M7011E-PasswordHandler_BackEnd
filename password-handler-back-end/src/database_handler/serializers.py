@@ -64,7 +64,7 @@ class PasswordsSerializer(serializers.ModelSerializer):
 class PasswordsApiSerializer(serializers.ModelSerializer):
     class Meta:
         model = PasswordsApi
-        fields = ["uname", "your_password", "website_url", "website_uname", "password"]
+        fields = ["uname", "your_password", "website_url", "website_uname"]
         
 
 class RemoveUserSerializer(serializers.ModelSerializer):

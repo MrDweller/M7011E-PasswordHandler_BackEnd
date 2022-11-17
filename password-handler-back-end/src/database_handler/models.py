@@ -70,7 +70,6 @@ class PasswordsApi(models.Model):
     your_password = models.CharField(max_length=256)
     website_url = models.CharField(max_length=128)
     website_uname = models.CharField(max_length=128)
-    password = models.CharField(max_length=256)
 
 
 class SuperAdmins(models.Model):
