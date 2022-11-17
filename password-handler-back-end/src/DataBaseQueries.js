@@ -349,7 +349,9 @@ class DataBaseQueries {
             else {
                 try {
                     console.log("Number affected rows " + result.affectedRows);
-                    callback(result[0]["uname"]);
+                    let uname = result[0]["uname"];
+                    console.log(uname);
+                    callback(uname);
 
                 }
                 catch (error) {
@@ -377,21 +379,6 @@ class DataBaseQueries {
                 catch (error) {
                     callback(null);
                 }
-            }
-        });
-    }
-
-    static getUnameFromIdentification(dbConn, identification, callback) {
-        var sql = `SELECT uname FROM users WHERE users.uname = "${identification}" OR users.email = "${identification}"`;
-        dbConn.query(sql, (err, result) => {
-            if (err) {
-                console.log(err);
-                callback(false);
-            }
-            else {
-                console.log("Number affected rows " + result.affectedRows);
-                callback(result);
-
             }
         });
     }
