@@ -7,6 +7,7 @@ urlpatterns = [
     path('addUser/', views.UserApiView.as_view(), name="user"),
     path('getUsers/', views.UsersApiView.as_view(), name="get_users"),
     path('removeUser/', views.RemoveUserApiView.as_view(), name="remove_user"),
+    path('loginUser/', views.LoginView.as_view(), name="login"),
 
     # ADMINS
     path('addAdmin/', views.AdminApiView.as_view(), name="admin"),
@@ -22,8 +23,8 @@ urlpatterns = [
 
     # FEEDBACK
     path('addFeedback/', views.FeedbackApiView.as_view(), name="feedback"),
-    path('removeFeedback/', views.RemoveFeedbackApiView.as_view(), name="remove_feedback"),
     path('getFeedbacks/', views.FeedbacksApiView.as_view(), name="get_feedback"),
+    path('removeFeedback/', views.RemoveFeedbackApiView.as_view(), name="remove_feedback"),
 
     # PASSWORD
     path('addNewWebsitePassword/', views.NewWebsitePasswordsApiView.as_view(), name="add_new_website_password"),
