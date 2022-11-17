@@ -78,6 +78,7 @@ class BackEndManager {
 
         let encryptedKey = AES.encryptData(key, hashed_masterpwd, ivKey);        
         let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, secondSalt);
+        console.log("UNAME addUser() " + userName);
       
         try {
             DataBaseQueries.addUser(this.dbConn, userName, email, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, ivKey, callback);
