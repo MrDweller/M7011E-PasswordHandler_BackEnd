@@ -95,10 +95,10 @@ class DataBaseQueries {
         });
     }
 
-    static addNewPassword(dbConn, uname, website_url, website_uname, encypted_pwd, callback) {
+    static addNewPassword(dbConn, uname, website_url, website_uname, encypted_pwd, iv, callback) {
         var sql = "INSERT INTO `passwords` VALUES ? ";
         var values = [
-            [uname, website_url, website_uname, encypted_pwd.toString("base64")]
+            [uname, website_url, website_uname, encypted_pwd.toString("base64"), iv.toString("base64")]
         ];
         dbConn.query(sql, [values], (err, result) => {
             if (err) {
@@ -228,9 +228,8 @@ class DataBaseQueries {
 
     }
 
-    static getUserForLoginAuthentication(dbConn, identification, callback) {
-        var identification = identification;
-        var sql = `SELECT hashedhashed_masterpwd FROM users WHERE users.uname = "${identification}" OR users.email = "${identification}"`
+    static getUserPwdForAuthentication(dbConn, uname, callback) {
+        var sql = `SELECT hashedhashed_masterpwd FROM users WHERE users.uname = "${uname}"`
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
@@ -238,14 +237,14 @@ class DataBaseQueries {
             }
             else {
                 console.log("Number affected rows " + result.affectedRows);
-                result[0]["hashedhashed_masterpwd"] = Buffer.from(result[0]["hashedhashed_masterpwd"], "base64");
-                callback(result);
+                let hashedhashed_masterpwd = Buffer.from(result[0]["hashedhashed_masterpwd"], "base64");
+                callback(hashedhashed_masterpwd);
             }
         });
     }
 
-    static getAdminForLoginAuthentication(dbConn, identification, callback) {
-        var sql = `SELECT hashed_pwd FROM admins WHERE admins.uname = "${identification}" OR admins.email = "${identification}"`
+    static getAdminPwdForAuthentication(dbConn, uname, callback) {
+        var sql = `SELECT hashed_pwd FROM admins WHERE admins.uname = "${uname}"`
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
@@ -292,31 +291,46 @@ class DataBaseQueries {
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
-                callback(false);
+                callback(null);
+            }
+            else if(result.length > 0){
+                try {
+                    console.log("Number affected rows " + result.affectedRows);
+                    result[0]["salt_1"] = Buffer.from(result[0]["salt_1"], "base64");
+                    result[0]["salt_2"] = Buffer.from(result[0]["salt_2"], "base64");
+                    result[0]["encrypted_key"] = Buffer.from(result[0]["encrypted_key"], "base64");
+                    result[0]["iv"] = Buffer.from(result[0]["iv"], "base64");
+                    callback(result[0]);
+                }
+                catch (error) {
+                    callback(null);
+                }
             }
             else {
-                console.log("Number affected rows " + result.affectedRows);
-                result[0]["salt_1"] = Buffer.from(result[0]["salt_1"], "base64");
-                result[0]["salt_2"] = Buffer.from(result[0]["salt_2"], "base64");
-                result[0]["encrypted_key"] = Buffer.from(result[0]["encrypted_key"], "base64");
-                result[0]["iv"] = Buffer.from(result[0]["iv"], "base64");
-                callback(result);
+                callback(null);
             }
         });
     }
 
-    static getUserSalts(dbConn, identification, callback) {
-        var sql = `SELECT salt_1, salt_2 FROM users WHERE users.uname = "${identification}" OR users.email = "${identification}"`;
+    static getUserSalts(dbConn, uname, callback) {
+        var sql = `SELECT salt_1, salt_2 FROM users WHERE users.uname = "${uname}"`;
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
-                callback(false);
+                callback(null);
             }
             else if(result.length > 0){
-                console.log("Number affected rows " + result.affectedRows);
-                result[0]["salt_1"] = Buffer.from(result[0]["salt_1"], "base64");
-                result[0]["salt_2"] = Buffer.from(result[0]["salt_2"], "base64");
-                callback(result);
+                try {
+                    console.log("Number affected rows " + result.affectedRows);
+                    result[0]["salt_1"] = Buffer.from(result[0]["salt_1"], "base64");
+                    result[0]["salt_2"] = Buffer.from(result[0]["salt_2"], "base64");
+                    callback(result[0]);
+
+                }
+                catch (error) {
+                    callback(null);
+                }
+
 
             }
             else {
@@ -330,12 +344,41 @@ class DataBaseQueries {
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
-                callback(false);
+                callback(null);
             }
             else {
-                console.log("Number affected rows " + result.affectedRows);
-                callback(result);
+                try {
+                    console.log("Number affected rows " + result.affectedRows);
+                    let uname = result[0]["uname"];
+                    console.log(uname);
+                    callback(uname);
 
+                }
+                catch (error) {
+                    callback(null);
+                }
+            }
+        });
+    }
+
+    static getWebsitePassword(dbConn, uname, website_url, website_uname, callback) {
+        var sql = `SELECT encrypted_pwd, iv FROM passwords WHERE passwords.uname = "${uname}" AND passwords.website_url = "${website_url}" AND passwords.website_uname = "${website_uname}"`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(null);
+            }
+            else {
+                try {
+                    console.log("Number affected rows " + result.affectedRows);
+                    result[0]["encrypted_pwd"] = Buffer.from(result[0]["encrypted_pwd"], "base64");
+                    result[0]["iv"] = Buffer.from(result[0]["iv"], "base64");
+                    callback(result[0]);
+
+                }
+                catch (error) {
+                    callback(null);
+                }
             }
         });
     }
