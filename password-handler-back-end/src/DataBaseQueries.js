@@ -382,6 +382,26 @@ class DataBaseQueries {
             }
         });
     }
+
+    static getAllWebsitePasswords(dbConn, uname, callback) {
+        var sql = `SELECT website_url, website_uname FROM passwords WHERE passwords.uname = "${uname}"`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(null);
+            }
+            else {
+                try {
+                    console.log("Number affected rows " + result.affectedRows);
+                    callback(result);
+
+                }
+                catch (error) {
+                    callback(null);
+                }
+            }
+        });
+    }
 }
 
 module.exports = DataBaseQueries;

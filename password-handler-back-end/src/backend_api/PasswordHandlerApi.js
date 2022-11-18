@@ -81,6 +81,25 @@ class PasswordHandlerApi {
             }
         });
 
+        this.expressApi.post('/readAllPasswords', function (request, response) {
+            try {
+                console.log("request.body: " + request.body);
+                
+                backEndHandler.getAllPasswords(request.body, (data) => {
+                    console.log(data);
+
+                    let responseBody = {};
+                    responseBody["passwords"] = data;
+
+                    response.status(200).send(responseBody);
+                });
+                
+            } catch (error) {
+                console.log(error);
+                response.status(400).end();
+            }
+        });
+
         this.expressApi.post('/readPassword', function (request, response) {
             try {
                 console.log("request.body: " + request.body);

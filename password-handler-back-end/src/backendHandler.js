@@ -110,6 +110,21 @@ class BackEndManager {
 
     }
 
+    getAllPasswords(jsonData, callback) {
+        let decryptedData = jsonData;
+        let uname = decryptedData["uname"];
+
+        DataBaseQueries.getAllWebsitePasswords(this.dbConn, uname, (result) => {
+            if (result === null) {
+                callback(null);
+                return;
+            }
+            console.log(result);
+            callback(result);
+        });
+
+    }
+
     readPassword(jsonData, callback) {
         let decryptedData = jsonData;
         let uname = decryptedData["uname"];
