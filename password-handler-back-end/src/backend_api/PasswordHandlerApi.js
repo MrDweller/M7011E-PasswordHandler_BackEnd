@@ -69,10 +69,10 @@ class PasswordHandlerApi {
         this.expressApi.post('/authenticate', function(request, response){
             try {
                 console.log(request.body);
-                backEndHandler.authenticateUser(request.body, (data) => {
+                backEndHandler.loginUser(request.body, (data) => {
                     console.log(data);
                     let responseBody = {};
-                    responseBody["status"] = data;
+                    responseBody["uname"] = data;
                     response.status(200).send(responseBody);
                 });
             } catch(error){
@@ -80,6 +80,64 @@ class PasswordHandlerApi {
                 response.status(400).end();
             }
         });
+
+        this.expressApi.post('/readAllPasswords', function (request, response) {
+            try {
+                console.log("request.body: " + request.body);
+                
+                backEndHandler.getAllPasswords(request.body, (data) => {
+                    console.log(data);
+
+                    let responseBody = {};
+                    responseBody["passwords"] = data;
+
+                    response.status(200).send(responseBody);
+                });
+                
+            } catch (error) {
+                console.log(error);
+                response.status(400).end();
+            }
+        });
+
+        this.expressApi.post('/readPassword', function (request, response) {
+            try {
+                console.log("request.body: " + request.body);
+
+                backEndHandler.readPassword(request.body, (data) => {
+                    console.log(data);
+
+                    let responseBody = {};
+                    responseBody["password"] = data;
+
+                    response.status(200).send(responseBody);
+                });
+                
+            } catch (error) {
+                console.log(error);
+                response.status(400).end();
+            }
+        });
+
+        this.expressApi.post('/addPassword', function (request, response) {
+            try {
+                console.log("request.body: " + request.body);
+                
+                backEndHandler.addPassword(request.body, (data) => {
+                    console.log(data);
+
+                    let responseBody = {};
+                    responseBody["status"] = data;
+
+                    response.status(200).send(responseBody);
+                });
+                
+            } catch (error) {
+                console.log(error);
+                response.status(400).end();
+            }
+        });
+
     }
 
 }
