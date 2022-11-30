@@ -8,6 +8,7 @@ const MySQL = require('mysql');
 const DataBaseQueries = require('./DataBaseQueries');
 const { response } = require('express');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 
 class BackEndManager {
     constructor() {
@@ -209,17 +210,27 @@ class BackEndManager {
 
     }
 
-    resetMail(jsonData, callback){
+    resetPassword(jsonData, callback){
         DataBaseQueries.getUnameFromIdentification(this.dbConn, jsonData["email"], (uname) => {
             if (uname === null){
                 callback(false);
             }else{
-                this.sendMail(jsonData["email"], jsonData["subject"], jsonData["msg"], callback)
+                let token = crypto.randomBytes(20).toString('base64');
+                DataBaseQueries.changeUserToken(this.dbConn, jsonData["email"], token, (result) => {
+                    if(result){
+                        let html ='<p>You requested for reset password, kindly use this <a href="http://localhost:3000/passwordhandler/reset-password?token=' + token + '">link</a> to reset your password</p>'
+                        this.sendMail(jsonData["email"], jsonData["subject"], jsonData["msg"], html,  callback);
+                    }else{
+                        this.resetPassword(jsonData, callback);
+                    }
+                })
+                
             }
         })
     }
 
-    sendMail(email, subject, msg, callback){
+    sendMail(email, subject, msg, html, callback){
+
         var transporter = nodemailer.createTransport({
             service: 'gmail',
             auth : {
@@ -232,7 +243,8 @@ class BackEndManager {
             from: 'pwordhandler@gmail.com',
             to: email,
             subject: subject,
-            text: msg
+            text: msg,
+            html: html
         };
 
         transporter.sendMail(mailOptions, function(error, info){

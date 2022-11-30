@@ -70,10 +70,8 @@ class PasswordHandlerApi {
         this.expressApi.post('/email', function (request, response) {
             try {
                 console.log("request.body: " + request.body);
-                
-
-                
-                backEndHandler.resetMail(request.body, (data) => {
+            
+                backEndHandler.resetPassword(request.body, (data) => {
                     console.log(data);
 
                     let responseBody = {};

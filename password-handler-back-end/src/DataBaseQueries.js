@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 class DataBaseQueries {
     static addUser(dbConn, uname, email, hashedhashed_masterpwd, salt_1, salt_2, encrypted_key, iv, callback) {
         var sql = "INSERT INTO `users` VALUES ? ";
@@ -8,7 +9,8 @@ class DataBaseQueries {
                 salt_1.toString('base64'),
                 salt_2.toString('base64'),
                 encrypted_key.toString('base64'),
-                iv.toString('base64')]
+                iv.toString('base64'),
+                crypto.randomBytes(20).toString('base64')]
         ];
         dbConn.query(sql, [values], (err, result) => {
             if (err) {
@@ -39,6 +41,42 @@ class DataBaseQueries {
             }
         });
 
+    }
+
+    static changeUserToken(dbConn, email, token, callback){
+        var sql = `UPDATE users SET token = "${token}" where email = "${email}" `
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(false);
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(true);
+            }
+        });
+    }
+
+    static getUserToken(dbConn, identification, callback){
+        var sql = `SELECT token FROM users WHERE users.uname = "${identification}" OR users.email = "${identification}"`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(null);
+            }
+            else {
+                try {
+                    console.log("Number affected rows " + result.affectedRows);
+                    let token = result[0]["token"];
+                    console.log(token);
+                    callback(token);
+
+                }
+                catch (error) {
+                    callback(null);
+                }
+            }
+        });
     }
 
     static addAdmin(dbConn, uname, email, hashedPassword, salt, callback) {
