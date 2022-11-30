@@ -336,6 +336,23 @@ class DataBaseQueries {
             }
         });
     }
+
+    static getIPSofUser(dbConn, uname, callback){
+        var sql = `SELECT ip FROM ips WHERE ips.uname = "${uname}"`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(false);
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(result);
+
+            }
+        });
+
+    }
+    
 }
 
 module.exports = DataBaseQueries;
