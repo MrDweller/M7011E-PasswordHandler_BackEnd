@@ -10,6 +10,7 @@ class PasswordHandlerApi {
         this.expressApi = express();
         this.expressApi.use(bodyParser.json());
         
+        
         var corsOptions = {
             origin: 'http://localhost:3000',
             optionsSuccessStatus: 200 // For legacy browser support
@@ -65,6 +66,28 @@ class PasswordHandlerApi {
                 response.status(400).end();
             }
         });
+
+        this.expressApi.post('/email', function (request, response) {
+            try {
+                console.log("request.body: " + request.body);
+                
+
+                
+                backEndHandler.resetMail(request.body, (data) => {
+                    console.log(data);
+
+                    let responseBody = {};
+                    responseBody["status"] = data;
+
+                    response.status(200).send(responseBody);
+                });
+                
+            } catch (error) {
+                console.log(error);
+                response.status(400).end();
+            }
+        });
+
 
         this.expressApi.post('/authenticate', function(request, response){
             try {

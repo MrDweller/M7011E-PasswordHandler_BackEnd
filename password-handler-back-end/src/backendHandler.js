@@ -7,6 +7,7 @@ const fs = require('fs');
 const MySQL = require('mysql');
 const DataBaseQueries = require('./DataBaseQueries');
 const { response } = require('express');
+const nodemailer = require('nodemailer');
 
 class BackEndManager {
     constructor() {
@@ -206,6 +207,41 @@ class BackEndManager {
             });
         });
 
+    }
+
+    resetMail(jsonData, callback){
+        DataBaseQueries.getUnameFromIdentification(this.dbConn, jsonData["email"], (uname) => {
+            if (uname === null){
+                callback(false);
+            }else{
+                this.sendMail(jsonData["email"], jsonData["subject"], jsonData["msg"], callback)
+            }
+        })
+    }
+
+    sendMail(email, subject, msg, callback){
+        var transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth : {
+                user: 'pwordhandler@gmail.com',
+                pass : 'gfyn jmue xwrm ihtz'
+            }
+        });
+
+        var mailOptions = {
+            from: 'pwordhandler@gmail.com',
+            to: email,
+            subject: subject,
+            text: msg
+        };
+
+        transporter.sendMail(mailOptions, function(error, info){
+            if(error){
+                callback(error)
+            }else{
+                console.log('Email sent :' + info.response);
+            }
+        })
     }
 
 }
