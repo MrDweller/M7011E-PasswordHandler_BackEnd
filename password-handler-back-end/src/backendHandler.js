@@ -106,10 +106,33 @@ class BackEndManager {
                     callback(null);
                     return;
                 }
-                callback(uname);
+
+                this.#addNewToken(uname, (token) => {
+                    if (token === null) {
+                        callback(null);
+                        return;
+                    }
+                    callback(token);
+                })
+
+                
+                
             });
         });
 
+    }
+
+    #addNewToken(uname, callback){
+        let newToken = crypto.randomBytes(20).toString('base64');
+        DataBaseQueries.changeUserToken(this.dbConn, uname, newToken, (result) => {
+            if(result){
+                callback(newToken);
+            }
+            else{
+                this.#addNewToken(uname, callback);
+            }
+                    
+        })
     }
 
     getAllPasswords(jsonData, callback) {

@@ -43,8 +43,8 @@ class DataBaseQueries {
 
     }
 
-    static changeUserToken(dbConn, email, token, callback){
-        var sql = `UPDATE users SET token = "${token}" where email = "${email}" `
+    static changeUserToken(dbConn, uname, token, callback){
+        var sql = `UPDATE users SET token = "${token}" where uname = "${uname}" `
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
