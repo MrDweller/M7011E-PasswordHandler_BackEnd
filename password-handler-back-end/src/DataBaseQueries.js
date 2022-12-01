@@ -79,6 +79,28 @@ class DataBaseQueries {
         });
     }
 
+    static getUnameFromToken(dbConn, token, callback){
+        var sql = `SELECT uname FROM users WHERE users.token = "${token}"`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(null);
+            } 
+            else {
+                try {
+                    console.log("Number affected rows " + result.affectedRows);
+                    let uname = result[0]["uname"];
+                    console.log(uname);
+                    callback(uname);
+
+                }
+                catch (error) {
+                    callback(null);
+                }
+            }
+        });
+    }
+
     static addAdmin(dbConn, uname, email, hashedPassword, salt, callback) {
         var sql = "INSERT INTO `admins` VALUES ? ";
         var values = [
