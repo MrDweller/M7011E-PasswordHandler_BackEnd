@@ -78,10 +78,10 @@ class BackEndManager {
 
         let hashed_masterpwd = Hash.hashPlainText(masterpwd, firstSalt);
 
-        let encryptedKey = AES.encryptData(key, hashed_masterpwd, ivKey);        
+        let encryptedKey = AES.encryptData(key, hashed_masterpwd, ivKey);
         let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, secondSalt);
         console.log("UNAME addUser() " + userName);
-      
+
         try {
             DataBaseQueries.addUser(this.dbConn, userName, email, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, ivKey, callback);
 
@@ -95,7 +95,7 @@ class BackEndManager {
         let decryptedData = jsonData;
         let identification = decryptedData["identification"];
         let masterpwd = decryptedData["password"];
-        DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (uname) =>{
+        DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (uname) => {
             if (uname === null) {
                 callback(null);
                 return;
@@ -172,13 +172,12 @@ class BackEndManager {
             });
         });
 
-       
+
     }
 
     #authenticateUser(uname, masterpwd, callback) {
         DataBaseQueries.getColumsForEncryptingPassword(this.dbConn, uname, (columns) => {
-            if (columns === null)
-            {
+            if (columns === null) {
                 callback(false);
                 return;
             }
@@ -191,16 +190,15 @@ class BackEndManager {
             let key = AES.decryptData(encrypted_key, hashed_masterpwd, iv);
 
             DataBaseQueries.getUserPwdForAuthentication(this.dbConn, uname, (db_hashedhashed_pwd) => {
-                if (db_hashedhashed_pwd === null)
-                {
+                if (db_hashedhashed_pwd === null) {
                     callback(false);
                     return;
                 }
-                
+
                 let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, salts["salt_2"]);
                 if (db_hashedhashed_pwd.toString() === hashedhashed_masterpwd.toString()) {
                     callback(true, uname, key);
-                } 
+                }
                 else {
                     callback(false);
                     return;
@@ -210,32 +208,33 @@ class BackEndManager {
 
     }
 
-    resetPassword(jsonData, callback){
+
+    resetPassword(jsonData, callback) {
         DataBaseQueries.getUnameFromIdentification(this.dbConn, jsonData["email"], (uname) => {
-            if (uname === null){
+            if (uname === null) {
                 callback(false);
-            }else{
+            } else {
                 let token = crypto.randomBytes(20).toString('base64');
                 DataBaseQueries.changeUserToken(this.dbConn, jsonData["email"], token, (result) => {
-                    if(result){
-                        let html ='<p>You requested for reset password, kindly use this <a href="http://localhost:3000/passwordhandler/reset-password?token=' + token + '">link</a> to reset your password</p>'
-                        this.sendMail(jsonData["email"], jsonData["subject"], jsonData["msg"], html,  callback);
-                    }else{
+                    if (result) {
+                        let html = '<p>You requested for reset password, kindly use this <a href="http://localhost:3000/passwordhandler/reset-password?token=' + token + '">link</a> to reset your password</p>'
+                        this.sendMail(jsonData["email"], jsonData["subject"], jsonData["msg"], html, callback);
+                    } else {
                         this.resetPassword(jsonData, callback);
                     }
                 })
-                
+
             }
         })
     }
 
-    sendMail(email, subject, msg, html, callback){
+    sendMail(email, subject, msg, html, callback) {
 
         var transporter = nodemailer.createTransport({
             service: 'gmail',
-            auth : {
+            auth: {
                 user: 'pwordhandler@gmail.com',
-                pass : 'gfyn jmue xwrm ihtz'
+                pass: 'gfyn jmue xwrm ihtz'
             }
         });
 
@@ -247,10 +246,10 @@ class BackEndManager {
             html: html
         };
 
-        transporter.sendMail(mailOptions, function(error, info){
-            if(error){
+        transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
                 callback(error)
-            }else{
+            } else {
                 console.log('Email sent :' + info.response);
             }
         })
