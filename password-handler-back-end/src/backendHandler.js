@@ -137,39 +137,53 @@ class BackEndManager {
 
     getAllPasswords(jsonData, callback) {
         let decryptedData = jsonData;
-        let uname = decryptedData["uname"];
+        let token = decryptedData["token"];
 
-        DataBaseQueries.getAllWebsitePasswords(this.dbConn, uname, (result) => {
-            if (result === null) {
+        DataBaseQueries.getUnameFromToken(this.dbConn, token, (uname) => {
+            if (uname === null) {
                 callback(null);
                 return;
             }
-            console.log(result);
-            callback(result);
+            DataBaseQueries.getAllWebsitePasswords(this.dbConn, uname, (result) => {
+                if (result === null) {
+                    callback(null);
+                    return;
+                }
+                console.log(result);
+                callback(result);
+            });
+
         });
 
     }
 
     readPassword(jsonData, callback) {
         let decryptedData = jsonData;
-        let uname = decryptedData["uname"];
+        let token = decryptedData["token"];
         let masterpwd = decryptedData["password"];
         let website_url = decryptedData["website_url"];
         let website_uname = decryptedData["website_uname"];
 
-        this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
-            if (result !== true) {
+        DataBaseQueries.getUnameFromToken(this.dbConn, token, (uname) => {
+            if (uname === null) {
                 callback(null);
                 return;
             }
-            DataBaseQueries.getWebsitePassword(this.dbConn, uname, website_url, website_uname, (result) => {
-                if (result === null) {
+            this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
+                if (result !== true) {
                     callback(null);
                     return;
                 }
-                let password = AES.decryptData(result["encrypted_pwd"], key, result["iv"]);
-                callback(password.toString());
+                DataBaseQueries.getWebsitePassword(this.dbConn, uname, website_url, website_uname, (result) => {
+                    if (result === null) {
+                        callback(null);
+                        return;
+                    }
+                    let password = AES.decryptData(result["encrypted_pwd"], key, result["iv"]);
+                    callback(password.toString());
+                });
             });
+
         });
 
     }

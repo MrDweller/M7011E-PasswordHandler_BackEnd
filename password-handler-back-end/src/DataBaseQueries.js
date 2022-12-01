@@ -10,7 +10,8 @@ class DataBaseQueries {
                 salt_2.toString('base64'),
                 encrypted_key.toString('base64'),
                 iv.toString('base64'),
-                crypto.randomBytes(20).toString('base64')]
+                crypto.randomBytes(20).toString('base64'),
+                null]
         ];
         dbConn.query(sql, [values], (err, result) => {
             if (err) {
@@ -44,7 +45,7 @@ class DataBaseQueries {
     }
 
     static changeUserToken(dbConn, uname, token, callback){
-        var sql = `UPDATE users SET token = "${token}" where uname = "${uname}" `
+        var sql = `UPDATE users SET token = "${token}", token_timestamp=NULL where email = "${uname}" `
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
@@ -80,7 +81,7 @@ class DataBaseQueries {
     }
 
     static getUnameFromToken(dbConn, token, callback){
-        var sql = `SELECT uname FROM users WHERE users.token = "${token}"`;
+        var sql = `SELECT uname FROM users WHERE users.token = "${token}" AND token_timestamp > CURRENT_TIMESTAMP() - 10`;
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
