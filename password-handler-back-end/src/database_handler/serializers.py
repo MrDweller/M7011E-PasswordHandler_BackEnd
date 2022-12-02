@@ -115,7 +115,17 @@ class ResetPasswordUserApiSerializer(serializers.ModelSerializer):
         fields = ["new_password", "confirm_new_password", "token"]
 
 
-class   UserTokenApiSerializer(serializers.ModelSerializer):
+class UserTokenSerializer(serializers.ModelSerializer):
     class Meta:
-        model = UserTokenApi
+        model = Users
         fields = ["token", "token_timestamp"]
+
+class ReadAllUserPasswordsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Users
+        fields = ["token"]
+
+class ReadPasswordsApiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Passwords
+        fields = ["website_uname", "website_url"]

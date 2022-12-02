@@ -32,6 +32,7 @@ urlpatterns = [
     path('changePasswordWebsite', views.ChangeWebsitePasswordsApiView.as_view(), name="change_website_password"),
     path('sendResetEmail', views.SendPasswordResetMailApiView.as_view(), name="send_password_reset_mail"),
     path('resetUserPassword', views.ResetUserPasswordApiView.as_view(), name="reset_user_password"),
+    path('readAllPasswords', views.ReadAllUserPasswordsView.as_view(), name="readAllPasswords"),
 
     
 

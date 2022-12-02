@@ -377,7 +377,7 @@ class ChangeWebsitePasswordsApiView(APIView):
                 [request.data.get('uname'), request.data.get('website_url'), request.data.get('website_uname')])
 
                 password_object = cursor.fetchone()
-                print(password_object)
+                #print(password_object)
 
                 # password_object = Passwords.objects.get(
                 #     uname=request.data.get('uname'), 
@@ -444,11 +444,9 @@ class LoginApiView(APIView):
             user_object.token = token
             user_object.token_timestamp = None
             user_object.save()
-            print("HÄR")
-            print(user_object.token_timestamp)
 
-            token_serializer= UserTokenApiSerializer(user_object)
-            # token_shit(user_object)
+            token_serializer= UserTokenSerializer(user_object)
+            token_shit(user_object)
             return Response(token_serializer.data, status=status.HTTP_200_OK) 
 
 
@@ -518,3 +516,18 @@ class ResetUserPasswordApiView(APIView):
             user_object.save()
             return Response(status=status.HTTP_200_OK)
 
+class ReadAllUserPasswordsView(APIView):
+    serializer_class = ReadAllUserPasswordsSerializer
+
+    def post(self, request):
+
+        if request.method == 'POST':
+            try:
+                user_object = Users.objects.get(token=request.data.get('token'))
+                passwords = Passwords.objects.filter(uname=user_object.uname)
+            except Users.DoesNotExist:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+
+            token_shit(user_object)
+            serializer = ReadPasswordsApiSerializer(passwords, context={'request': request}, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)

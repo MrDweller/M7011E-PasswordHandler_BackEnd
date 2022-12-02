@@ -56,7 +56,7 @@ class Passwords(models.Model):
     uname = models.ForeignKey('Users', models.DO_NOTHING, db_column='uname')
     website_url = models.CharField(max_length=128)
     website_uname = models.CharField(max_length=128)
-    encrypted_pwd = models.CharField(max_length=256)
+    encrypted_pwd = models.CharField(max_length=256, primary_key=True)
     iv = models.CharField(max_length=128)
 
     class Meta:
