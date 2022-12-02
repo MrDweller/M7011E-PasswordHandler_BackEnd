@@ -118,10 +118,10 @@ class PasswordHandlerApi {
                         response.status(200).send(responseBody);
                     }
                     else {
-                        let responseBody = {};
-                        responseBody["passwords"] = data;
+                        //let responseBody = {};
+                        //responseBody["passwords"] = data;
     
-                        response.status(200).send(responseBody);
+                        response.status(200).send(data);
 
                     }
 
