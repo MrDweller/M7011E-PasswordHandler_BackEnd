@@ -166,7 +166,6 @@ class BackEndManager {
                 callback(null);
                 return;
             }
-            console.log("uname2 " + uname);
             DataBaseQueries.getAllWebsitePasswords(this.dbConn, uname, (result) => {
                 if (result === null) {
                     callback(null);
@@ -187,7 +186,14 @@ class BackEndManager {
         let website_url = decryptedData["website_url"];
         let website_uname = decryptedData["website_uname"];
 
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (uname) => {
+        DataBaseQueries.getUnameFromToken(this.dbConn, token, (error, uname) => {
+            console.log(uname + ": " + masterpwd);
+            if (error) {
+                console.log("error" + error);
+                callback(error);
+                return;
+            }
+
             if (uname === null) {
                 callback(null);
                 return;

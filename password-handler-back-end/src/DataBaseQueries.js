@@ -93,7 +93,7 @@ class DataBaseQueries {
                 try {
                     console.log("Number affected rows " + result.affectedRows);
                     let uname = result[0]["uname"];
-                    console.log("uname" + uname);
+                    console.log("uname " + uname);
                     if (uname) {
                         callback(null, uname);
                     }
