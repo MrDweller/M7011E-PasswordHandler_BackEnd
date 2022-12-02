@@ -116,14 +116,13 @@ class PasswordHandlerApi {
                         responseBody["error"] = "INVALID_TOKEN";
     
                         response.status(200).send(responseBody);
+                        return;
                     }
-                    else {
-                        //let responseBody = {};
-                        //responseBody["passwords"] = data;
-    
-                        response.status(200).send(data);
+                    //let responseBody = {};
+                    //responseBody["passwords"] = data;
 
-                    }
+                    response.status(200).send(data);
+
 
                 });
                 
@@ -139,6 +138,14 @@ class PasswordHandlerApi {
 
                 backEndHandler.readPassword(request.body, (data) => {
                     console.log(data);
+                    if (data instanceof InvalidToken)
+                    {
+                        let responseBody = {};
+                        responseBody["error"] = "INVALID_TOKEN";
+    
+                        response.status(200).send(responseBody);
+                        return;
+                    }
 
                     let responseBody = {};
                     responseBody["password"] = data;
