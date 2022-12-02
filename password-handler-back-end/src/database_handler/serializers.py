@@ -102,3 +102,20 @@ class LoginApiSerializer(serializers.ModelSerializer):
         model = LoginApi
         fields = ["identification", "password"]
 
+
+class SendPasswordResetMailApiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserApi
+        fields = ["email"]
+
+
+class ResetPasswordUserApiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserResetPasswordApi
+        fields = ["new_password", "confirm_new_password", "token"]
+
+
+class   UserTokenApiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserTokenApi
+        fields = ["token", "token_timestamp"]

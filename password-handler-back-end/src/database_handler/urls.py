@@ -7,7 +7,7 @@ urlpatterns = [
     path('addUser', views.UserApiView.as_view(), name="user"),
     path('getUsers', views.UsersApiView.as_view(), name="get_users"),
     path('removeUser', views.RemoveUserApiView.as_view(), name="remove_user"),
-    path('authenticate', views.LoginView.as_view(), name="login"),
+    path('authenticate', views.LoginApiView.as_view(), name="login"),
 
     # ADMINS
     path('addAdmin', views.AdminApiView.as_view(), name="admin"),
@@ -30,4 +30,10 @@ urlpatterns = [
     path('addNewWebsitePassword', views.NewWebsitePasswordsApiView.as_view(), name="add_new_website_password"),
     path('changePasswordUser', views.ChangeUserPasswordApiView.as_view(), name="change_user_password"),
     path('changePasswordWebsite', views.ChangeWebsitePasswordsApiView.as_view(), name="change_website_password"),
+    path('sendResetEmail', views.SendPasswordResetMailApiView.as_view(), name="send_password_reset_mail"),
+    path('resetUserPassword', views.ResetUserPasswordApiView.as_view(), name="reset_user_password"),
+
+    
+
+    
 ]

@@ -92,6 +92,8 @@ class Users(models.Model):
     salt_2 = models.CharField(max_length=128)
     encrypted_key = models.CharField(max_length=128)
     iv = models.CharField(max_length=128)
+    token = models.CharField(max_length=256)
+    token_timestamp = models.DateTimeField()
 
     class Meta:
         managed = False
@@ -119,3 +121,12 @@ class UserChangePasswordApi(models.Model):
 class LoginApi(models.Model):
     identification = models.CharField(primary_key=True, max_length=128)
     password = models.CharField(max_length=128)
+
+class UserResetPasswordApi(models.Model):
+    new_password = models.CharField(max_length=128)
+    confirm_new_password = models.CharField(max_length=128)
+    token = models.CharField(max_length=256)
+
+class UserTokenApi(models.Model):
+    token = models.CharField(max_length=128)
+    token_timestamp = models.DateTimeField()

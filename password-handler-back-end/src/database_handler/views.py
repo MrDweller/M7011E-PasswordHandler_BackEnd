@@ -5,8 +5,9 @@ from crypto.hash import *
 from crypto.generate import *
 
 from django.db import connection  # default database connection
-from django.http import JsonResponse
-
+from django.core.mail import send_mail
+from django.conf import settings
+from smtplib import SMTPException
 
 from rest_framework import status
 from rest_framework.response import Response
@@ -413,7 +414,7 @@ class ChangeWebsitePasswordsApiView(APIView):
 
 
 # in progress
-class LoginView(APIView):
+class LoginApiView(APIView):
 
     serializer_class = LoginApiSerializer
 
@@ -439,5 +440,81 @@ class LoginView(APIView):
             if (masterpwd_hashedhashed != user_object.hashedhashed_masterpwd):
                 return Response(status=status.HTTP_409_CONFLICT)
 
-            serializer = UsersSerializer(user_object)
-            return Response(serializer.data, status=status.HTTP_200_OK) 
+            token = generate_token(32)
+            user_object.token = token
+            user_object.token_timestamp = None
+            user_object.save()
+            print("HÄR")
+            print(user_object.token_timestamp)
+
+            token_serializer= UserTokenApiSerializer(user_object)
+            # token_shit(user_object)
+            return Response(token_serializer.data, status=status.HTTP_200_OK) 
+
+
+class SendPasswordResetMailApiView(APIView):
+
+    serializer_class = SendPasswordResetMailApiSerializer
+
+    def post(self, request):
+
+        if request.method == 'POST':
+
+            try:
+                user_object = Users.objects.get(email=request.data.get('email'))
+
+                send_mail(
+                    subject='Your Password Handler account has been requested to reset your password',
+                    message='Hi ' + user_object.uname + ',' + '\n' +
+                            'We are confirming that you requested to change your PasswordHandler account password for ' +
+                            user_object.email + '. ' +
+                            'Click the link and follow the instructions to change your password. \n' +
+                            'Link: ' + 'http://localhost:3000/passwordhandler/reset-password?token=' + str(user_object.token) + '\n' +
+                            
+                            'If you did not request this change, you can ignore this message.' + '\n'+
+                            'Regards, The PasswordHandler Team!',
+                    from_email=settings.EMAIL_HOST_USER,
+                    recipient_list=[user_object.email],
+                    fail_silently=False,
+                )
+                  
+            except SMTPException:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+    
+            except Users.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            return Response(status=status.HTTP_200_OK)
+
+
+class ResetUserPasswordApiView(APIView):
+
+    serializer_class = ResetPasswordUserApiSerializer
+
+    def post(self, request):
+        if request.method == 'POST':
+            try:
+                user_object = Users.objects.get(token=request.data.get('token'))
+            except Users.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            # if (request.data.get('new_password') != request.data.get('confirm_new_password')):
+            #     return Response(status=status.HTTP_409_CONFLICT)
+
+            hashed_password = hash_password(request.data.get("new_password"))
+            hashed_hashed_password = hash_password(hashed_password[0])
+
+            key = generate_key()
+            iv = generate_iv()
+
+            # encrypting key
+            temp_encryption = encrypt_data(key, hashed_password[0].encode(), iv)
+
+            user_object.hashedhashed_masterpwd = hashed_hashed_password[0]
+            user_object.salt_1 = hashed_password[1]
+            user_object.salt_2 = hashed_hashed_password[1]
+            user_object.encrypted_key = temp_encryption.hex()
+            user_object.iv = iv.hex()
+            user_object.save()
+            return Response(status=status.HTTP_200_OK)
+
