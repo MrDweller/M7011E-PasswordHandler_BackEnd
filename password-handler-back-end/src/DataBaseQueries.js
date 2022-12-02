@@ -412,6 +412,26 @@ class DataBaseQueries {
         });
     }
 
+    static getEmailFromUname(dbConn, uname, callback){
+        var sql = `SELECT email FROM users WHERE users.uname = "${uname}"`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(null);
+            }
+            else {
+                try {
+                    console.log("Number affected rows " + result.affectedRows);
+                    callback(result[0]["email"]);
+
+                }
+                catch (error) {
+                    callback(null);
+                }
+            }
+        });
+    }
+
     static getUnameFromIdentification(dbConn, identification, callback) {
         var sql = `SELECT uname FROM users WHERE users.uname = "${identification}" OR users.email = "${identification}"`;
         dbConn.query(sql, (err, result) => {
@@ -490,6 +510,27 @@ class DataBaseQueries {
             }
         });
 
+    }
+
+    static checkIPofUser(dbConn, uname, ip, callback){
+        var sql = `SELECT ip FROM ips WHERE ips.uname = "${uname}" and ips.ip = "${ip}"`;
+        
+        dbConn.query(sql, (err, result) => {
+            try{
+                if (result[0]["ip"] === ip) {
+                    console.log("ip check true");
+                    callback(true);
+                }
+            }catch (error){
+                
+                console.log("ip check false")
+                callback(false);
+    
+                
+            }
+            
+           
+        });
     }
     
 }

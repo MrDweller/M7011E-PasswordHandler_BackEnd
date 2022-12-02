@@ -95,6 +95,7 @@ class BackEndManager {
         let decryptedData = jsonData;
         let identification = decryptedData["identification"];
         let masterpwd = decryptedData["password"];
+        let userIP = decryptedData["userIP"];
         DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (uname) => {
             if (uname === null) {
                 callback(null);
@@ -106,14 +107,28 @@ class BackEndManager {
                     callback(null);
                     return;
                 }
-
-                this.#addNewToken(uname, (token) => {
-                    if (token === null) {
-                        callback(null);
-                        return;
+                DataBaseQueries.checkIPofUser(this.dbConn, uname, userIP, (result) => {
+                    if(result){
+                        this.#addNewToken(uname, (token) => {
+                            if (token === null) {
+                                callback(null);
+                                return;
+                            }
+                            callback(token);
+                        })
+                    }else{
+                        DataBaseQueries.getEmailFromUname(this.dbConn, uname, (email) => {
+                            let token = crypto.randomBytes(20).toString('base64');
+                            DataBaseQueries.changeUserToken(this.dbConn, jsonData["email"], token, (result) => {
+                                if (result) {
+                                    let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/homepage?token=' + token + '">link</a> to verify the login.</p>'
+                                    this.sendMail(email,'New login location detected','' , html, callback);
+                                }
+                                });
+                        });
                     }
-                    callback(token);
-                })
+                });
+                
 
                 
                 
