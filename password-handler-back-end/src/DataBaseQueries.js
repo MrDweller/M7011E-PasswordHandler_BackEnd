@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const InvalidToken = require('./errors');
+
 class DataBaseQueries {
     static addUser(dbConn, uname, email, hashedhashed_masterpwd, salt_1, salt_2, encrypted_key, iv, callback) {
         var sql = "INSERT INTO `users` VALUES ? ";
@@ -45,7 +47,7 @@ class DataBaseQueries {
     }
 
     static changeUserToken(dbConn, uname, token, callback){
-        var sql = `UPDATE users SET token = "${token}", token_timestamp=NULL where email = "${uname}" `
+        var sql = `UPDATE users SET token = "${token}", token_timestamp=NULL where uname = "${uname}" `
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
@@ -85,18 +87,28 @@ class DataBaseQueries {
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
-                callback(null);
+                callback(err);
             } 
             else {
                 try {
                     console.log("Number affected rows " + result.affectedRows);
                     let uname = result[0]["uname"];
-                    console.log(uname);
-                    callback(uname);
+                    console.log("uname" + uname);
+                    if (uname) {
+                        callback(null, uname);
+                    }
+                    else {
+                        callback(new Error("Not valid token"));
+
+                    }
 
                 }
                 catch (error) {
-                    callback(null);
+                    if (error instanceof TypeError) {
+                        callback(new InvalidToken());
+                        return;
+                    }
+                    callback(error);
                 }
             }
         });

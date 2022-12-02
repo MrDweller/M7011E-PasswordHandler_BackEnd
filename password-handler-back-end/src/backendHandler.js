@@ -138,12 +138,20 @@ class BackEndManager {
     getAllPasswords(jsonData, callback) {
         let decryptedData = jsonData;
         let token = decryptedData["token"];
-
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (uname) => {
-            if (uname === null) {
+        console.log("token " + token);
+        DataBaseQueries.getUnameFromToken(this.dbConn, token, (err, uname) => {
+            
+            if (err) {
+                console.log("error" + err);
+                callback(err);
+                return;
+            }
+            if (uname === null)
+            {
                 callback(null);
                 return;
             }
+            console.log("uname2 " + uname);
             DataBaseQueries.getAllWebsitePasswords(this.dbConn, uname, (result) => {
                 if (result === null) {
                     callback(null);

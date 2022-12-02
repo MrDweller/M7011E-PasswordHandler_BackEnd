@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const BackEndHandler = require('../backendHandler')
+const InvalidToken = require('../errors');
+
 class PasswordHandlerApi {
     constructor(host, port) {
         this.host = host;
@@ -108,11 +110,21 @@ class PasswordHandlerApi {
                 
                 backEndHandler.getAllPasswords(request.body, (data) => {
                     console.log(data);
+                    if (data instanceof InvalidToken)
+                    {
+                        let responseBody = {};
+                        responseBody["error"] = "INVALID_TOKEN";
+    
+                        response.status(200).send(responseBody);
+                    }
+                    else {
+                        let responseBody = {};
+                        responseBody["passwords"] = data;
+    
+                        response.status(200).send(responseBody);
 
-                    let responseBody = {};
-                    responseBody["passwords"] = data;
+                    }
 
-                    response.status(200).send(responseBody);
                 });
                 
             } catch (error) {
