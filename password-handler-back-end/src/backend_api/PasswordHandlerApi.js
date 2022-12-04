@@ -69,6 +69,34 @@ class PasswordHandlerApi {
             }
         });
 
+        this.expressApi.post('/readUserName', function (request, response) {
+            try {
+                console.log("request.body: " + request.body);
+
+                
+                backEndHandler.readUserName(request.body, (data) => {
+                    if (data instanceof InvalidToken)
+                    {
+                        let responseBody = {};
+                        responseBody["error"] = "INVALID_TOKEN";
+    
+                        response.status(200).send(responseBody);
+                        return;
+                    }
+                    console.log(data);
+
+                    let responseBody = {};
+                    responseBody["userName"] = data;
+
+                    response.status(200).send(responseBody);
+                });
+                
+            } catch (error) {
+                console.log(error);
+                response.status(400).end();
+            }
+        });
+
         this.expressApi.post('/email', function (request, response) {
             try {
                 console.log("request.body: " + request.body);

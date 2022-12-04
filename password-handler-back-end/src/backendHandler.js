@@ -179,6 +179,26 @@ class BackEndManager {
 
     }
 
+    readUserName(jsonData, callback) {
+        let decryptedData = jsonData;
+        let token = decryptedData["token"];
+
+        DataBaseQueries.getUnameFromToken(this.dbConn, token, (error, uname) => { 
+            if (error) {
+                console.log("error " + error);
+                callback(error);
+                return;
+            }
+
+            if (uname === null) {
+                callback(null);
+                return;
+            }
+
+            callback(uname);
+        });
+    }
+
     readPassword(jsonData, callback) {
         let decryptedData = jsonData;
         let token = decryptedData["token"];
