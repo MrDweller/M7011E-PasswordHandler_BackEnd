@@ -440,13 +440,35 @@ class LoginApiView(APIView):
             if (masterpwd_hashedhashed != user_object.hashedhashed_masterpwd):
                 return Response(status=status.HTTP_409_CONFLICT)
 
+            
+            # if(all_user_ips.ip != request.data.get('userIP')):
+            #     try:
+                    
+            #         send_mail(
+            #             subject='Bajs',
+            #             message='Hi ' + user_object.uname + ',' + '\n' +
+            #                     'We are confirming that you requested to change your PasswordHandler account password for ' +
+            #                     user_object.email + '. ' +
+            #                     'Click the link and follow the instructions to change your password. \n' +
+            #                     'Link: ' + 'http://localhost:3000/passwordhandler/reset-password?token=' + str(user_object.token) + '\n' +
+                                
+            #                     'If you did not request this change, you can ignore this message.' + '\n'+
+            #                     'Regards, The PasswordHandler Team!',
+            #             from_email=settings.EMAIL_HOST_USER,
+            #             recipient_list=[user_object.email],
+            #             fail_silently=False,
+            #         )
+                  
+            #     except SMTPException:
+            #         return Response(status=status.HTTP_404_NOT_FOUND)
+
+
             token = generate_token(32)
             user_object.token = token
             user_object.token_timestamp = None
             user_object.save()
 
-            token_serializer= UserTokenSerializer(user_object)
-            token_shit(user_object)
+            token_serializer = UserTokenSerializer(user_object)
             return Response(token_serializer.data, status=status.HTTP_200_OK) 
 
 
@@ -520,7 +542,7 @@ class ReadAllUserPasswordsView(APIView):
     serializer_class = ReadAllUserPasswordsSerializer
 
     def post(self, request):
-
+       
         if request.method == 'POST':
             try:
                 user_object = Users.objects.get(token=request.data.get('token'))
@@ -528,6 +550,10 @@ class ReadAllUserPasswordsView(APIView):
             except Users.DoesNotExist:
                 return Response(status=status.HTTP_404_NOT_FOUND)
 
-            token_shit(user_object)
-            serializer = ReadPasswordsApiSerializer(passwords, context={'request': request}, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            valid_token = check_token_validity_by_timestamp(user_object)
+
+            if valid_token == True:
+                serializer = ReadPasswordsApiSerializer(passwords, context={'request': request}, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else: # not a valid token
+                return Response(valid_token, status=status.HTTP_200_OK)

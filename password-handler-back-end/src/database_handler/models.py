@@ -47,9 +47,8 @@ class Ips(models.Model):
         managed = False
         db_table = 'ips'
         constraints = [
-            models.UniqueConstraint(fields=['uname', 'ip'], name='siiiiir')
+            models.UniqueConstraint(fields=['uname', 'ip'], name='unique_constraint')
         ]
-        # unique_together = (('uname', 'ip'),)
 
 
 class Passwords(models.Model):
