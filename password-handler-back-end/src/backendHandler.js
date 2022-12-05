@@ -108,7 +108,7 @@ class BackEndManager {
                     return;
                 }
                 DataBaseQueries.checkIPofUser(this.dbConn, uname, userIP, (result) => {
-                    if(result){
+                    if (result) {
                         this.#addNewToken(uname, (token) => {
                             if (token === null) {
                                 callback(null);
@@ -116,37 +116,37 @@ class BackEndManager {
                             }
                             callback(token);
                         })
-                    }else{
+                    } else {
                         DataBaseQueries.getEmailFromUname(this.dbConn, uname, (email) => {
                             let token = crypto.randomBytes(20).toString('base64');
                             DataBaseQueries.changeUserToken(this.dbConn, jsonData["email"], token, (result) => {
                                 if (result) {
                                     let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/homepage?token=' + token + '">link</a> to verify the login.</p>'
-                                    this.sendMail(email,'New login location detected','' , html, callback);
+                                    this.sendMail(email, 'New login location detected', '', html, callback);
                                 }
-                                });
+                            });
                         });
                     }
                 });
-                
 
-                
-                
+
+
+
             });
         });
 
     }
 
-    #addNewToken(uname, callback){
+    #addNewToken(uname, callback) {
         let newToken = crypto.randomBytes(20).toString('base64');
         DataBaseQueries.changeUserToken(this.dbConn, uname, newToken, (result) => {
-            if(result){
+            if (result) {
                 callback(newToken);
             }
-            else{
+            else {
                 this.#addNewToken(uname, callback);
             }
-                    
+
         })
     }
 
@@ -155,14 +155,13 @@ class BackEndManager {
         let token = decryptedData["token"];
         console.log("token " + token);
         DataBaseQueries.getUnameFromToken(this.dbConn, token, (err, uname) => {
-            
+
             if (err) {
                 console.log("error" + err);
                 callback(err);
                 return;
             }
-            if (uname === null)
-            {
+            if (uname === null) {
                 callback(null);
                 return;
             }
@@ -183,7 +182,7 @@ class BackEndManager {
         let decryptedData = jsonData;
         let token = decryptedData["token"];
 
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (error, uname) => { 
+        DataBaseQueries.getUnameFromToken(this.dbConn, token, (error, uname) => {
             if (error) {
                 console.log("error " + error);
                 callback(error);
@@ -197,6 +196,57 @@ class BackEndManager {
 
             callback(uname);
         });
+    }
+
+    changeMasterPassword(jsonData, callback) {
+        let decryptedData = jsonData;
+        let token = decryptedData["token"];
+        let masterpwd = decryptedData["password"];
+        let new_masterpwd = decryptedData["newPassword"];
+
+        DataBaseQueries.getUnameFromToken(this.dbConn, token, (error, uname) => {
+            console.log(uname + ": " + masterpwd);
+            if (error) {
+                console.log("error" + error);
+                callback(error);
+                return;
+            }
+
+            if (uname === null) {
+                callback(null);
+                return;
+            }
+            this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
+                if (result !== true) {
+                    callback(null);
+                    return;
+                }
+                DataBaseQueries.getColumsForEncryptingPassword(this.dbConn, uname, (columns) => {
+                    if (columns === null) {
+                        callback(false);
+                        return;
+                    }
+                    let ivKey = columns["iv"];
+
+                    let firstSalt = Hash.generateSalt();
+                    let secondSalt = Hash.generateSalt();
+
+                    let hashed_masterpwd = Hash.hashPlainText(new_masterpwd, firstSalt);
+
+                    let encryptedKey = AES.encryptData(key, hashed_masterpwd, ivKey);
+                    let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, secondSalt);
+                    DataBaseQueries.changePasswordUser(this.dbConn, uname, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, (result) => {
+                        if (result === null) {
+                            callback(false);
+                            return;
+                        }
+                        callback(true);
+                    });
+                });
+            });
+
+        });
+
     }
 
     readPassword(jsonData, callback) {
