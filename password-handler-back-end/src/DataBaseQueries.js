@@ -128,6 +128,74 @@ class DataBaseQueries {
         });
     }
 
+    static changeUserEmailToken(dbConn, uname, token, callback){
+        var sql = `UPDATE users SET email_token = "${token}", email_token_timestamp=NULL where uname = "${uname}"`
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(false);
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(true);
+            }
+        });
+    }
+
+    static getUserEmailToken(dbConn, uname, callback){
+        var sql = `SELECT email_token FROM users WHERE users.uname = "${uname}"`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(null);
+            }
+            else {
+                try {
+                    console.log("Number affected rows " + result.affectedRows);
+                    let token = result[0]["token"];
+                    console.log(token);
+                    callback(token);
+
+                }
+                catch (error) {
+                    callback(null);
+                }
+            }
+        });
+    }
+
+    static getUnameFromEmailToken(dbConn, token, callback){
+        var sql = `SELECT uname FROM users WHERE users.email_token = "${token}" AND CURRENT_TIMESTAMP() - email_token_timestamp < 60`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(err);
+            } 
+            else {
+                try {
+                    console.log("Number affected rows " + result.affectedRows);
+                    let uname = result[0]["uname"];
+                    console.log("uname " + uname);
+                    if (uname) {
+                        callback(null, uname);
+                    }
+                    else {
+                        callback(new Error("Not valid token"));
+
+                    }
+
+                }
+                catch (error) {
+                    if (error instanceof TypeError) {
+                        callback(new InvalidToken());
+                        return;
+                    }
+                    callback(error);
+                }
+            }
+        });
+    }
+
     static addAdmin(dbConn, uname, email, hashedPassword, salt, callback) {
         var sql = "INSERT INTO `admins` VALUES ? ";
         var values = [

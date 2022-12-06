@@ -86,7 +86,7 @@ class PasswordHandlerApi {
                     console.log(data);
 
                     let responseBody = {};
-                    responseBody["userName"] = data;
+                    responseBody["uname"] = data;
 
                     response.status(200).send(responseBody);
                 });

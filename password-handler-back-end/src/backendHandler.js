@@ -150,6 +150,19 @@ class BackEndManager {
         })
     }
 
+    #addNewEmailToken(uname, callback) {
+        let newToken = crypto.randomBytes(20).toString('base64');
+        DataBaseQueries.changeUserEmailToken(this.dbConn, uname, newToken, (result) => {
+            if (result) {
+                callback(newToken);
+            }
+            else {
+                this.#addNewToken(uname, callback);
+            }
+
+        })
+    }
+
     getAllPasswords(jsonData, callback) {
         let decryptedData = jsonData;
         let token = decryptedData["token"];
@@ -274,8 +287,36 @@ class BackEndManager {
         let decryptedData = jsonData;
         let token = decryptedData["token"];
         let new_email = decryptedData["new_email"];
+        DataBaseQueries.getUnameFromToken(this.dbConn, token, (err, uname) => {
+            if (err) {
+                console.log("error" + err);
+                callback(err);
+                return;
+            }
+            if (uname === null) {
+                callback(null);
+                return;
+            }
+            this.#verifyEmail(uname, new_email, (err) => {
+                if(err) {
+                    callback(false);
+                    return;
+                }
+                callback(true);
+                
+
+            });
+
+        })
         // TODO: Generate a token and send an email conformation request
         //this.sendMail(new_email, )
+    }
+
+    #verifyEmail(uname, email, callback) {
+        this.#addNewEmailToken(uname, (email_token) => {
+            let html = '<p>You must confirm your email, kindly use this <a href="http://localhost:3000/verifyEmail?email_token=' + email_token + '">link</a> to verify the your email.</p>'
+            this.sendMail(email, 'New email detected', '', html, callback);
+        });
     }
 
     readPassword(jsonData, callback) {
