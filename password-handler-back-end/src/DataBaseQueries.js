@@ -46,6 +46,20 @@ class DataBaseQueries {
 
     }
 
+    static changeUname(dbConn, old_uname, new_uname, callback) {
+        var sql = `UPDATE users SET uname = "${new_uname}" where uname = "${old_uname}" `
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(false);
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(true);
+            }
+        });
+    }
+
     static changeUserToken(dbConn, uname, token, callback){
         var sql = `UPDATE users SET token = "${token}", token_timestamp=NULL where uname = "${uname}" `
         dbConn.query(sql, (err, result) => {
@@ -83,7 +97,7 @@ class DataBaseQueries {
     }
 
     static getUnameFromToken(dbConn, token, callback){
-        var sql = `SELECT uname FROM users WHERE users.token = "${token}" AND CURRENT_TIMESTAMP() - token_timestamp < 10`;
+        var sql = `SELECT uname FROM users WHERE users.token = "${token}" AND CURRENT_TIMESTAMP() - token_timestamp < 60`;
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);

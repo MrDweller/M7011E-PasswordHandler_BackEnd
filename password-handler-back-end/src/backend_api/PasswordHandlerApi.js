@@ -214,6 +214,60 @@ class PasswordHandlerApi {
             }
         });
 
+        this.expressApi.post('/changeUname', function (request, response) {
+            try {
+                console.log("request.body: " + request.body);
+
+                backEndHandler.changeUname(request.body, (data) => {
+                    console.log(data);
+                    if (data instanceof InvalidToken)
+                    {
+                        let responseBody = {};
+                        responseBody["error"] = "INVALID_TOKEN";
+    
+                        response.status(200).send(responseBody);
+                        return;
+                    }
+
+                    let responseBody = {};
+                    responseBody["status"] = data;
+
+                    response.status(200).send(responseBody);
+                });
+                
+            } catch (error) {
+                console.log(error);
+                response.status(400).end();
+            }
+        });
+
+        this.expressApi.post('/requestEmailChange', function (request, response) {
+            try {
+                console.log("request.body: " + request.body);
+
+                backEndHandler.requestEmailChange(request.body, (data) => {
+                    console.log(data);
+                    if (data instanceof InvalidToken)
+                    {
+                        let responseBody = {};
+                        responseBody["error"] = "INVALID_TOKEN";
+    
+                        response.status(200).send(responseBody);
+                        return;
+                    }
+
+                    let responseBody = {};
+                    responseBody["status"] = data;
+
+                    response.status(200).send(responseBody);
+                });
+                
+            } catch (error) {
+                console.log(error);
+                response.status(400).end();
+            }
+        });
+
         this.expressApi.post('/addPassword', function (request, response) {
             try {
                 console.log("request.body: " + request.body);

@@ -249,6 +249,35 @@ class BackEndManager {
 
     }
 
+    changeUname(jsonData, callback) {
+        let decryptedData = jsonData;
+        let token = decryptedData["token"];
+        let new_uname = decryptedData["new_uname"];
+
+        DataBaseQueries.getUnameFromToken(this.dbConn, token, (err, uname) => {
+            if (err) {
+                console.log("error" + err);
+                callback(err);
+                return;
+            }
+            if (uname === null) {
+                callback(null);
+                return;
+            }
+            DataBaseQueries.changeUname(this.dbConn, uname, new_uname, (result) => {
+                callback(result);
+            })
+        });
+    }
+
+    requestEmailChange(jsonData, callback) {
+        let decryptedData = jsonData;
+        let token = decryptedData["token"];
+        let new_email = decryptedData["new_email"];
+        // TODO: Generate a token and send an email conformation request
+        //this.sendMail(new_email, )
+    }
+
     readPassword(jsonData, callback) {
         let decryptedData = jsonData;
         let token = decryptedData["token"];
