@@ -268,6 +268,25 @@ class PasswordHandlerApi {
             }
         });
 
+        this.expressApi.post('/confirmIP', function (request, response) {
+            try {
+                console.log("in c/confirmIP");
+
+                backEndHandler.addIPtoDB(request.body, (data) => {
+                    console.log(data);
+
+                    let responseBody = {};
+                    responseBody["status"] = data;
+
+                    response.status(200).send(responseBody);
+                });
+                
+            } catch (error) {
+                console.log(error);
+                response.status(400).end();
+            }
+        });
+
         this.expressApi.post('/addPassword', function (request, response) {
             try {
                 console.log("request.body: " + request.body);

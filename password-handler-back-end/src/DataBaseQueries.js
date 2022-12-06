@@ -1,5 +1,5 @@
-const crypto = require('crypto');
 const InvalidToken = require('./errors');
+const TokenGenerator = require('./tokenGenerator');
 
 class DataBaseQueries {
     static addUser(dbConn, uname, email, hashedhashed_masterpwd, salt_1, salt_2, encrypted_key, iv, callback) {
@@ -12,7 +12,9 @@ class DataBaseQueries {
                 salt_2.toString('base64'),
                 encrypted_key.toString('base64'),
                 iv.toString('base64'),
-                crypto.randomBytes(20).toString('base64'),
+                TokenGenerator.generateToken(20, true),
+                null,
+                null,
                 null]
         ];
         dbConn.query(sql, [values], (err, result) => {
@@ -165,7 +167,7 @@ class DataBaseQueries {
     }
 
     static getUnameFromEmailToken(dbConn, token, callback){
-        var sql = `SELECT uname FROM users WHERE users.email_token = "${token}" AND CURRENT_TIMESTAMP() - email_token_timestamp < 60`;
+        var sql = `SELECT uname FROM users WHERE users.email_token = "${token}" AND CURRENT_TIMESTAMP() - email_token_timestamp < 3600`;
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);

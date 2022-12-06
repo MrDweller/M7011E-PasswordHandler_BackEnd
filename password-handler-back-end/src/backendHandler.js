@@ -3,6 +3,7 @@ const RsaEncryption = require('./crypto/rsaEncryption');
 const AES = require('./crypto/aes');
 const Hash = require('./crypto/hash');
 const PasswordGenerator = require('./passwordGenerator');
+const TokenGenerator = require('./tokenGenerator');
 const fs = require('fs');
 const MySQL = require('mysql');
 const DataBaseQueries = require('./DataBaseQueries');
@@ -69,6 +70,7 @@ class BackEndManager {
         let userName = decryptedData["uname"];
         let email = decryptedData["email"];
         let masterpwd = decryptedData["password"];
+        let userIP = decryptedData["userIP"]
 
         let key = AES.generateKey();
         let ivKey = AES.generateIv();
@@ -83,7 +85,17 @@ class BackEndManager {
         console.log("UNAME addUser() " + userName);
 
         try {
-            DataBaseQueries.addUser(this.dbConn, userName, email, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, ivKey, callback);
+            DataBaseQueries.addUser(this.dbConn, userName, email, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, ivKey, (status) => {
+                if(status){
+                    DataBaseQueries.addIP(this.dbConn, userName, userIP, (status) => {
+                        if(status){
+                            callback(true);
+                        }else{
+                            callback(false);
+                        }
+                    })
+                }
+            });
 
         }
         catch (error) {
@@ -91,11 +103,40 @@ class BackEndManager {
         }
     }
 
+    addIPtoDB(jsonData, callback){
+        let userIP = jsonData["userIP"];
+        let token = jsonData["token"];
+        console.log("token: " + token);
+        console.log("ip: " + userIP);
+        DataBaseQueries.getUnameFromEmailToken(this.dbConn, token, (err, uname) => {
+            console.log("uname: " + uname);
+            
+            if (err) {
+                console.log("error" + err);
+                callback(false);
+                return;
+            }
+            if (uname === null)
+            {
+                callback(false);
+                return;
+            }
+
+            DataBaseQueries.addIP(this.dbConn, uname, userIP, (result) => {
+                if(result){
+                    callback(true)
+                }else{
+                    callback(false)
+                }
+            });
+        });
+    }
+
     loginUser(jsonData, callback) {
         let decryptedData = jsonData;
         let identification = decryptedData["identification"];
         let masterpwd = decryptedData["password"];
-        let userIP = decryptedData["userIP"];
+        let userIP = decryptedData["userIP"]   
         DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (uname) => {
             if (uname === null) {
                 callback(null);
@@ -118,12 +159,13 @@ class BackEndManager {
                         })
                     } else {
                         DataBaseQueries.getEmailFromUname(this.dbConn, uname, (email) => {
-                            let token = crypto.randomBytes(20).toString('base64');
-                            DataBaseQueries.changeUserToken(this.dbConn, jsonData["email"], token, (result) => {
-                                if (result) {
-                                    let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/homepage?token=' + token + '">link</a> to verify the login.</p>'
-                                    this.sendMail(email, 'New login location detected', '', html, callback);
+                            this.#addNewEmailToken(uname, (token) => {
+                                if (token === null) {
+                                    callback(null);
+                                    return;
                                 }
+                                let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?token=' + token + '&ip=' + userIP + '">link</a> to verify the login.</p>'
+                                this.sendMail(email,'New login location detected','' , html, callback);
                             });
                         });
                     }
@@ -137,8 +179,8 @@ class BackEndManager {
 
     }
 
-    #addNewToken(uname, callback) {
-        let newToken = crypto.randomBytes(20).toString('base64');
+    #addNewToken(uname, callback){
+        let newToken = TokenGenerator.generateToken(20, true);
         DataBaseQueries.changeUserToken(this.dbConn, uname, newToken, (result) => {
             if (result) {
                 callback(newToken);
@@ -151,7 +193,7 @@ class BackEndManager {
     }
 
     #addNewEmailToken(uname, callback) {
-        let newToken = crypto.randomBytes(20).toString('base64');
+        let newToken = TokenGenerator.generateToken(20, true);
         DataBaseQueries.changeUserEmailToken(this.dbConn, uname, newToken, (result) => {
             if (result) {
                 callback(newToken);
@@ -420,7 +462,7 @@ class BackEndManager {
             if (uname === null) {
                 callback(false);
             } else {
-                let token = crypto.randomBytes(20).toString('base64');
+                //let token = crypto.randomBytes(20).toString('base64'); /DO NOT USE THIS
                 DataBaseQueries.changeUserToken(this.dbConn, jsonData["email"], token, (result) => {
                     if (result) {
                         let html = '<p>You requested for reset password, kindly use this <a href="http://localhost:3000/passwordhandler/reset-password?token=' + token + '">link</a> to reset your password</p>'
