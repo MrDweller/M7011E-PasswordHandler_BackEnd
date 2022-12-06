@@ -401,23 +401,37 @@ class BackEndManager {
 
     addPassword(jsonData, callback) {
         let decryptedData = jsonData;
-        let uname = decryptedData["uname"];
+        let token = decryptedData["token"];
         let masterpwd = decryptedData["password"];
         let website_url = decryptedData["website_url"];
         let website_uname = decryptedData["website_uname"];
 
-        this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
-            if (result !== true) {
-                callback(false);
+        DataBaseQueries.getUnameFromToken(this.dbConn, token, (error, uname) => {
+            if (error) {
+                console.log("error" + error);
+                callback(error);
                 return;
             }
-            let iv = AES.generateIv();
-            let password = PasswordGenerator.generatePassword(16, true, true);
-            console.log(password);
-            let encypted_pwd = AES.encryptData(password, key, iv);
-            DataBaseQueries.addNewPassword(this.dbConn, uname, website_url, website_uname, encypted_pwd, iv, (result) => {
-                callback(result);
+
+            if (uname === null) {
+                callback(null);
+                return;
+            }
+
+            this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
+                if (result !== true) {
+                    callback(false);
+                    return;
+                }
+                let iv = AES.generateIv();
+                let password = PasswordGenerator.generatePassword(16, true, true);
+                console.log(password);
+                let encypted_pwd = AES.encryptData(password, key, iv);
+                DataBaseQueries.addNewPassword(this.dbConn, uname, website_url, website_uname, encypted_pwd, iv, (result) => {
+                    callback(result);
+                });
             });
+
         });
 
 
