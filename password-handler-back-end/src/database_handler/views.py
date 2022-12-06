@@ -17,13 +17,6 @@ from .models import *
 from .serializers import *
 
 
-# generic select query
-# def post(self, request):
-#         if request.POST:
-#             data = Users.objects.get(uname=request.data.get('uname'))
-#             print(data.email)
-#             return Response(status=201)
-
 class UserApiView(APIView):
 
     # A new serializer is created for API input
@@ -538,6 +531,7 @@ class ResetUserPasswordApiView(APIView):
             user_object.save()
             return Response(status=status.HTTP_200_OK)
 
+
 class ReadAllUserPasswordsView(APIView):
     serializer_class = ReadAllUserPasswordsSerializer
 
@@ -557,3 +551,54 @@ class ReadAllUserPasswordsView(APIView):
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else: # not a valid token
                 return Response(valid_token, status=status.HTTP_200_OK)
+
+
+class GetWebsitePasswordsApiView(APIView):
+
+    serializer_class = WebsitePasswordApi
+
+    def post(self, request):
+
+        if request.method == 'POST':
+           
+            try:
+                user_object = Users.objects.get(token=request.data.get('token'))
+                password = Passwords.objects.get(uname=user_object.uname, 
+                                                    website_url=request.data.get('website_url'), 
+                                                    website_uname=request.data.get('website_uname'))
+                print(password)
+            except Users.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            except:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            valid_token = check_token_validity_by_timestamp(user_object)
+
+            if valid_token != True:
+                return Response(valid_token, status=status.HTTP_200_OK)
+
+            temp_dict = {}
+            temp_dict = request.data.copy()
+
+            masterpwd_decrypted = temp_dict.get('password')
+            masterpwd_hashed = hash_password_salt(masterpwd_decrypted, user_object.salt_1)
+            masterpwd_hashedhashed = hash_password_salt(masterpwd_hashed, user_object.salt_2)
+
+            if (masterpwd_hashedhashed != user_object.hashedhashed_masterpwd):
+                return Response(status=status.HTTP_409_CONFLICT)
+
+            key = codecs.decode(user_object.encrypted_key, 'hex_codec')  # from hex to byte
+            iv = codecs.decode(user_object.iv, 'hex_codec')
+            website_password_iv = codecs.decode(password.iv, 'hex_codec')
+
+            decrypted_key = decrypt_data(key, masterpwd_hashed.encode(), iv)
+            dehexed_password = codecs.decode(password.encrypted_pwd, 'hex_codec')
+            decrypted_website_password = decrypt_data(dehexed_password, decrypted_key, website_password_iv)
+            # dehexed_website_password = codecs.decode(decrypted_website_password, 'hex_codec')
+
+            temp_dict['website_password'] = decrypted_website_password
+
+            serializer = GetPasswordApiSerializer(temp_dict)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+
