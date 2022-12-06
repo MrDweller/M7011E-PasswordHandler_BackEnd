@@ -54,9 +54,13 @@ class UserApiView(APIView):
 
 class GetUserApiView(APIView):
     def post(self, request):
-        if request.method == 'POST':
+        if request.method == 'POST': 
             data = Users.objects.get(token=request.data.get('token'))
-            serializer = UsersSerializer(data)
+            valid_token = check_token_validity_by_timestamp(data)
+            if valid_token != True:
+                return Response(valid_token, status=status.HTTP_200_OK)
+
+            serializer = GetUserSerializer(data)
             return Response(serializer.data)
 
 
@@ -67,6 +71,42 @@ class UsersApiView(APIView):
             data = Users.objects.all()
             serializer = UsersSerializer(data, context={'request': request}, many=True)
             return Response(serializer.data)
+
+
+class ChangeUsernameApiView(APIView):
+
+    serializer_class = ChangeUsernameApiSerializer
+
+    def post(self, request):
+        if request.method == 'POST':
+            try:
+                valid_token = check_token_validity_by_timestamp(Users.objects.get(token=request.data.get('token')))
+                if valid_token != True:
+                    return Response(valid_token, status=status.HTTP_200_OK)
+
+                Users.objects.filter(token=request.data.get('token')).update(uname=request.data.get('new_uname'))
+            except Users.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            return Response(status=status.HTTP_200_OK)
+
+
+class ChangeEmailApiView(APIView):
+
+    serializer_class = ChangeEmailApiSerializer
+
+    def post(self, request):
+        if request.method == 'POST':
+            try:
+                valid_token = check_token_validity_by_timestamp(Users.objects.get(token=request.data.get('token')))
+                if valid_token != True:
+                    return Response(valid_token, status=status.HTTP_200_OK)
+
+                Users.objects.filter(token=request.data.get('token')).update(email=request.data.get('new_email'))
+            except Users.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+                
+            return Response(status=status.HTTP_200_OK)
 
 
 class AdminsApiView(APIView):
@@ -110,7 +150,7 @@ class AdminApiView(APIView):
 
 
 class SuperAdminsApiView(APIView):
-    serializer_class = SuperAdminsSerializerApi
+    serializer_class = SuperAdminsApiSerializer
 
     def get(self, request):
         if request.method == 'GET':
@@ -125,34 +165,12 @@ class SuperAdminsApiView(APIView):
             except Admins.DoesNotExist:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
-
             cursor = connection.cursor()  # get cursor object so can commit
 
             cursor.execute('INSERT INTO super_admins (uname) VALUES (%s)', [request.data.get('uname')])
             connection.commit()
 
-            # temp_dict = {}
-            # temp_dict = request.data.copy()
-
-            # hashed_password = hash_password(temp_dict.get("password"))
-
-            # key = generate_key()
-            # iv = generate_iv()
-
-            # temp_dict['hashed_pwd'] = hashed_password[0]
-            # temp_dict['salt'] = hashed_password[1]
-
-            # # encrypting key
-            # temp_encryption = encrypt_data(key, hashed_password[0].encode(), iv)
-            # temp_dict['encrypted_key'] = temp_encryption.hex()
-            # temp_dict['iv'] = iv.hex()
-
-            # serializer = SuperAdminsSerializer(data=request.data)
-
-            # if serializer.is_valid(raise_exception=True):
-            #     serializer.save()
-            return Response(status=status.HTTP_201_CREATED) 
-            # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_201_CREATED)
 
 
 """ TODO:
@@ -172,11 +190,6 @@ class IpsApiView(APIView):
             connection.commit()
             row = cursor.fetchall()
             return Response(json.dumps(row))
-
-            # data = Ips.objects.all()
-            # serializer = IpsSerializer(data, context={'request': request}, many=True)
-            # return Response(serializer.data)
-            # return Response(status=status.HTTP_200_OK)
 
 
 class IpApiView(APIView):
@@ -242,7 +255,7 @@ class NewWebsitePasswordsApiView(APIView):
             new_iv = generate_iv()
 
             decrypted_key = decrypt_data(key, masterpwd_hashed.encode(), iv)
-            encrypted_password = encrypt_data(get_password(32), decrypted_key, new_iv)
+            encrypted_password = encrypt_data(get_password(10), decrypted_key, new_iv)
 
             temp_dict['encrypted_pwd'] = encrypted_password.hex()
             temp_dict['iv'] = new_iv.hex()
@@ -328,32 +341,47 @@ class RemoveUserFromIpsApiView(APIView):
 
 class ChangeUserPasswordApiView(APIView):
 
-    serializer_class = ChangePasswordUserSerializer
+    serializer_class = ChangePasswordUserApiSerializer
 
     def post(self, request):
         if request.method == 'POST':
             try:
-                user_object = Users.objects.get(uname=request.data.get('uname'))
+                user_object = Users.objects.get(token=request.data.get('token'))
+                user_object_passwords = Passwords.objects.filter(uname=user_object.uname)
             except Users.DoesNotExist:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
+            valid_token = check_token_validity_by_timestamp(Users.objects.get(token=request.data.get('token')))
+            if valid_token != True:
+                return Response(valid_token, status=status.HTTP_200_OK)
+            
             temp_dict = {}
             temp_dict = request.data.copy()
 
-            old_masterpwd_decrypted = temp_dict.get('old_password')
+            old_masterpwd_decrypted = temp_dict.get('password')
             old_masterpwd_hashed = hash_password_salt(old_masterpwd_decrypted, user_object.salt_1)
             old_masterpwd_hashedhashed = hash_password_salt(old_masterpwd_hashed, user_object.salt_2)
 
             if (old_masterpwd_hashedhashed != user_object.hashedhashed_masterpwd):
                 return Response(status=status.HTTP_409_CONFLICT)
 
-            hashed_password = hash_password(temp_dict.get("new_password"))
+            hashed_password = hash_password(temp_dict.get("newPassword"))
             hashed_hashed_password = hash_password(hashed_password[0])
 
             key = codecs.decode(user_object.encrypted_key, 'hex_codec')
             iv = codecs.decode(user_object.iv, 'hex_codec')
             decrypted_key = decrypt_data(key, old_masterpwd_hashed.encode(), iv)
             encrypted_key = encrypt_data(decrypted_key, hashed_password[0].encode(), iv)
+
+            for password in user_object_passwords:
+
+                website_password_iv = codecs.decode(password.iv, 'hex_codec')
+
+                dehexed_password = codecs.decode(password.encrypted_pwd, 'hex_codec')
+                decrypted_website_password = decrypt_data(dehexed_password, decrypted_key, website_password_iv)
+                encrypted_website_password = encrypt_data(decrypted_website_password, decrypted_key, website_password_iv)
+                password.encrypted_pwd = encrypted_website_password.hex()
+                password.save()
 
             user_object.hashedhashed_masterpwd = hashed_hashed_password[0]
             user_object.salt_1 = hashed_password[1]
@@ -376,15 +404,7 @@ class ChangeWebsitePasswordsApiView(APIView):
                 user_object = Users.objects.get(uname=request.data.get('uname'))
                 cursor.execute('SELECT * FROM passwords WHERE uname=%s AND website_url=%s AND website_uname=%s',
                 [request.data.get('uname'), request.data.get('website_url'), request.data.get('website_uname')])
-
                 password_object = cursor.fetchone()
-                #print(password_object)
-
-                # password_object = Passwords.objects.get(
-                #     uname=request.data.get('uname'), 
-                #     website_url=request.data.get('website_url'), 
-                #     website_uname=request.data.get('website_uname'))
-                    
             except Users.DoesNotExist:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -404,7 +424,7 @@ class ChangeWebsitePasswordsApiView(APIView):
             iv_password = codecs.decode(password_object[-1], 'hex_codec')
 
             decrypted_key = decrypt_data(key, masterpwd_hashed.encode(), iv)
-            encrypted_password = encrypt_data(get_password(32), decrypted_key, iv_password)
+            encrypted_password = encrypt_data(get_password(10), decrypted_key, iv_password) #No hex
 
             # ORM did not work. Manually constructed a query for updating an existing password for a website.
             # TODO: Check for alternate solution or why ORM doesn't work
@@ -519,9 +539,6 @@ class ResetUserPasswordApiView(APIView):
             except Users.DoesNotExist:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
-            # if (request.data.get('new_password') != request.data.get('confirm_new_password')):
-            #     return Response(status=status.HTTP_409_CONFLICT)
-
             hashed_password = hash_password(request.data.get("new_password"))
             hashed_hashed_password = hash_password(hashed_password[0])
 
@@ -555,7 +572,7 @@ class ReadAllUserPasswordsView(APIView):
             valid_token = check_token_validity_by_timestamp(user_object)
 
             if valid_token == True:
-                serializer = ReadPasswordsApiSerializer(passwords, context={'request': request}, many=True)
+                serializer = ReadPasswordsSerializer(passwords, context={'request': request}, many=True)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else: # not a valid token
                 return Response(valid_token, status=status.HTTP_200_OK)
@@ -563,9 +580,10 @@ class ReadAllUserPasswordsView(APIView):
 
 class GetWebsitePasswordsApiView(APIView):
 
-    serializer_class = WebsitePasswordApi
+    serializer_class = GetPasswordApiSerializer
 
     def post(self, request):
+        print(request.data)
 
         if request.method == 'POST':
            
@@ -574,7 +592,6 @@ class GetWebsitePasswordsApiView(APIView):
                 password = Passwords.objects.get(uname=user_object.uname, 
                                                     website_url=request.data.get('website_url'), 
                                                     website_uname=request.data.get('website_uname'))
-                print(password)
             except Users.DoesNotExist:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             except:
@@ -597,14 +614,12 @@ class GetWebsitePasswordsApiView(APIView):
 
             key = codecs.decode(user_object.encrypted_key, 'hex_codec')  # from hex to byte
             iv = codecs.decode(user_object.iv, 'hex_codec')
+
             website_password_iv = codecs.decode(password.iv, 'hex_codec')
-
             decrypted_key = decrypt_data(key, masterpwd_hashed.encode(), iv)
-            dehexed_password = codecs.decode(password.encrypted_pwd, 'hex_codec')
-            decrypted_website_password = decrypt_data(dehexed_password, decrypted_key, website_password_iv)
-            # dehexed_website_password = codecs.decode(decrypted_website_password, 'hex_codec')
+            decrypted_website_password = b64encode(decrypt_data(password.encrypted_pwd.encode(), decrypted_key, website_password_iv)).decode("utf-8")
 
-            temp_dict['website_password'] = decrypted_website_password
+            temp_dict['password'] = decrypted_website_password
 
             serializer = GetPasswordApiSerializer(temp_dict)
             return Response(serializer.data, status=status.HTTP_200_OK)

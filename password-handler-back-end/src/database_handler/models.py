@@ -113,9 +113,18 @@ class UserApi(models.Model):
 
 
 class UserChangePasswordApi(models.Model):
-    uname = models.CharField(primary_key=True, max_length=128)
-    old_password = models.CharField(max_length=128)
-    new_password = models.CharField(max_length=128)
+    token = models.CharField(primary_key=True, max_length=128)
+    password = models.CharField(max_length=128)
+    newPassword = models.CharField(max_length=128)
+
+
+class ChangeUsernameApi(models.Model):
+    token = models.CharField(max_length=256)
+    new_uname = models.CharField(max_length=128)
+
+class ChangeEmailApi(models.Model):
+    token = models.CharField(max_length=256)
+    new_email = models.CharField(max_length=128)
 
 
 class LoginApi(models.Model):

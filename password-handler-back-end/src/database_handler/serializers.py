@@ -18,10 +18,22 @@ class UsersSerializer(serializers.ModelSerializer):
         model = Users
         fields = ["uname", "email"]
 
-class GetUserApiSerializer(serializers.ModelSerializer):
+
+class GetUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = Users
-        fields = ['uname']
+        fields = ["uname"]
+
+
+class ChangeUsernameApiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChangeUsernameApi
+        fields = ["token", "new_uname"]
+
+class ChangeEmailApiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChangeEmailApi
+        fields = ["token", "new_email"]
 
 
 class AdminsSerializer(serializers.ModelSerializer):
@@ -42,7 +54,7 @@ class SuperAdminsSerializer(serializers.ModelSerializer):
         fields = ["uname"]
 
 
-class SuperAdminsSerializerApi(serializers.ModelSerializer):
+class SuperAdminsApiSerializer(serializers.ModelSerializer):
     class Meta:
         model = SuperAdminsApi
         fields = ["uname"]
@@ -96,10 +108,10 @@ class RemoveIpsSerializer(serializers.ModelSerializer):
         fields = ["uname"]
 
 
-class ChangePasswordUserSerializer(serializers.ModelSerializer):
+class ChangePasswordUserApiSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserChangePasswordApi
-        fields = ["uname", "old_password", "new_password"]
+        fields = ["token", "password", "newPassword"]
 
 
 class LoginApiSerializer(serializers.ModelSerializer):
@@ -132,7 +144,7 @@ class ReadAllUserPasswordsSerializer(serializers.ModelSerializer):
         fields = ["token"]
 
 
-class ReadPasswordsApiSerializer(serializers.ModelSerializer):
+class ReadPasswordsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Passwords
         fields = ["website_uname", "website_url"]
