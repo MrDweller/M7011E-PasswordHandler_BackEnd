@@ -83,7 +83,7 @@ class DataBaseQueries {
     }
 
     static getUnameFromToken(dbConn, token, callback){
-        var sql = `SELECT uname FROM users WHERE users.token = "${token}" AND token_timestamp > CURRENT_TIMESTAMP() - 10`;
+        var sql = `SELECT uname FROM users WHERE users.token = "${token}" AND CURRENT_TIMESTAMP() - token_timestamp < 10`;
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
