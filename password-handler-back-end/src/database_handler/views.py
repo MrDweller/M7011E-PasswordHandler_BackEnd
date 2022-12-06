@@ -52,6 +52,14 @@ class UserApiView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class GetUserApiView(APIView):
+    def post(self, request):
+        if request.method == 'POST':
+            data = Users.objects.get(token=request.data.get('token'))
+            serializer = UsersSerializer(data)
+            return Response(serializer.data)
+
+
 class UsersApiView(APIView):
 
     def get(self, request):

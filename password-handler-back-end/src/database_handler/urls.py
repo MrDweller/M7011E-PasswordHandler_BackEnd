@@ -6,6 +6,7 @@ urlpatterns = [
     # USERS
     path('addUser', views.UserApiView.as_view(), name="user"),
     path('getUsers', views.UsersApiView.as_view(), name="get_users"),
+    path('readUserName', views.GetUserApiView.as_view(), name="get_user"),
     path('removeUser', views.RemoveUserApiView.as_view(), name="remove_user"),
     path('authenticate', views.LoginApiView.as_view(), name="login"),
 

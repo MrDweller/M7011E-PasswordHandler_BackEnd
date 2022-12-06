@@ -18,6 +18,11 @@ class UsersSerializer(serializers.ModelSerializer):
         model = Users
         fields = ["uname", "email"]
 
+class GetUserApiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Users
+        fields = ['uname']
+
 
 class AdminsSerializer(serializers.ModelSerializer):
     class Meta:

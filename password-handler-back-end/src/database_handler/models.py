@@ -99,6 +99,7 @@ class Users(models.Model):
         db_table = 'users'
 
 
+
 class UsersApi(models.Model):
     uname = models.CharField(primary_key=True, max_length=128)
     email = models.CharField(unique=True, max_length=128)
