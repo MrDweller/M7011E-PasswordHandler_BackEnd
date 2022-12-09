@@ -4,7 +4,7 @@ from . import views
 app_name = 'database_handler'
 urlpatterns = [
     # USERS
-    path('addUser', views.UserApiView.as_view(), name="user"),
+    path('user', views.UserApiView.as_view(), name="user"),
     path('getUsers', views.UsersApiView.as_view(), name="get_users"),
     path('readUserName', views.GetUserApiView.as_view(), name="get_user"),
     path('removeUser', views.RemoveUserApiView.as_view(), name="remove_user"),
@@ -22,6 +22,8 @@ urlpatterns = [
     path('getIps', views.IpsApiView.as_view(), name="get_ips"),
     path('removeIp', views.RemoveIpsApiView.as_view(), name="remove_ip"),
     path('removeUserFromIps', views.RemoveUserFromIpsApiView.as_view(), name="remove_user_from_ip"),
+    path('confirmIP', views.ConfirmIpApiView.as_view(), name="confirm_ip"),
+
 
     # FEEDBACK
     path('addFeedback', views.FeedbackApiView.as_view(), name="feedback"),
@@ -29,7 +31,7 @@ urlpatterns = [
     path('removeFeedback', views.RemoveFeedbackApiView.as_view(), name="remove_feedback"),
 
     # PASSWORD
-    path('addNewWebsitePassword', views.NewWebsitePasswordsApiView.as_view(), name="add_new_website_password"),
+    path('addPassword', views.NewWebsitePasswordsApiView.as_view(), name="add_new_website_password"),
     path('changeMasterPassword', views.ChangeUserPasswordApiView.as_view(), name="change_master_password"),
     path('changePasswordWebsite', views.ChangeWebsitePasswordsApiView.as_view(), name="change_website_password"),
     path('sendResetEmail', views.SendPasswordResetMailApiView.as_view(), name="send_password_reset_mail"),

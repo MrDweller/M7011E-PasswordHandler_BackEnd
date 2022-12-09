@@ -51,6 +51,11 @@ class Ips(models.Model):
         ]
 
 
+class IpConfirmation(models.Model):
+    token = models.CharField(max_length=256)
+    userIP = models.CharField(max_length=128)
+
+
 class Passwords(models.Model):
     uname = models.ForeignKey('Users', models.DO_NOTHING, db_column='uname')
     website_url = models.CharField(max_length=128)
@@ -65,8 +70,8 @@ class Passwords(models.Model):
 
 
 class PasswordsApi(models.Model):
-    uname = models.OneToOneField('Users', models.DO_NOTHING, db_column='uname', primary_key=True)
-    your_password = models.CharField(max_length=256)
+    token = models.CharField(max_length=256)
+    password = models.CharField(max_length=256)
     website_url = models.CharField(max_length=128)
     website_uname = models.CharField(max_length=128)
 
@@ -93,11 +98,12 @@ class Users(models.Model):
     iv = models.CharField(max_length=128)
     token = models.CharField(max_length=256)
     token_timestamp = models.DateTimeField()
+    email_token = models.CharField(max_length=256)
+    email_token_timestamp = models.CharField(max_length=256)
 
     class Meta:
         managed = False
         db_table = 'users'
-
 
 
 class UsersApi(models.Model):
@@ -122,6 +128,7 @@ class ChangeUsernameApi(models.Model):
     token = models.CharField(max_length=256)
     new_uname = models.CharField(max_length=128)
 
+
 class ChangeEmailApi(models.Model):
     token = models.CharField(max_length=256)
     new_email = models.CharField(max_length=128)
@@ -131,14 +138,17 @@ class LoginApi(models.Model):
     identification = models.CharField(primary_key=True, max_length=128)
     password = models.CharField(max_length=128)
 
+
 class UserResetPasswordApi(models.Model):
     new_password = models.CharField(max_length=128)
     confirm_new_password = models.CharField(max_length=128)
     token = models.CharField(max_length=256)
 
+
 class UserTokenApi(models.Model):
     token = models.CharField(max_length=128)
     token_timestamp = models.DateTimeField()
+
 
 class WebsitePasswordApi(models.Model):
     token = models.CharField(max_length=128)

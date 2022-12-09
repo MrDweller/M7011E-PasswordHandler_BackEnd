@@ -48,7 +48,9 @@ class UserApiView(APIView):
             serializer = UserSerializer(data=temp_dict)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
-                return Response(status=status.HTTP_201_CREATED)
+                result = {"status": True}
+
+                return Response(result, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -234,15 +236,21 @@ class NewWebsitePasswordsApiView(APIView):
     def post(self, request):
 
         if request.method == 'POST':
+            print(request.data)
             try:
-                user_object = Users.objects.get(uname=request.data.get('uname'))
+                user_object = Users.objects.get(token=request.data.get('token'))
             except Users.DoesNotExist:
+                print("här")
                 return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            valid_token = check_token_validity_by_timestamp(user_object)
+            if valid_token != True:
+                return Response(valid_token, status=status.HTTP_200_OK)
 
             temp_dict = {}
             temp_dict = request.data.copy()
 
-            masterpwd_decrypted = temp_dict.get('your_password')
+            masterpwd_decrypted = temp_dict.get('password')
             masterpwd_hashed = hash_password_salt(masterpwd_decrypted, user_object.salt_1)
             masterpwd_hashedhashed = hash_password_salt(masterpwd_hashed, user_object.salt_2)
 
@@ -259,12 +267,14 @@ class NewWebsitePasswordsApiView(APIView):
 
             temp_dict['encrypted_pwd'] = encrypted_password.hex()
             temp_dict['iv'] = new_iv.hex()
+            temp_dict['uname'] = user_object.uname
 
             # Add all the fields from the API call to the database
             serializer = PasswordsSerializer(data=temp_dict)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
                 return Response(status=status.HTTP_201_CREATED)
+            print("bleh")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -441,6 +451,8 @@ class LoginApiView(APIView):
 
     def post(self, request):
 
+        cursor = connection.cursor()
+
         if request.method == 'POST':
             temp_dict = {}
             temp_dict = request.data.copy()
@@ -461,36 +473,77 @@ class LoginApiView(APIView):
             if (masterpwd_hashedhashed != user_object.hashedhashed_masterpwd):
                 return Response(status=status.HTTP_409_CONFLICT)
 
-            
-            # if(all_user_ips.ip != request.data.get('userIP')):
-            #     try:
-                    
-            #         send_mail(
-            #             subject='Bajs',
-            #             message='Hi ' + user_object.uname + ',' + '\n' +
-            #                     'We are confirming that you requested to change your PasswordHandler account password for ' +
-            #                     user_object.email + '. ' +
-            #                     'Click the link and follow the instructions to change your password. \n' +
-            #                     'Link: ' + 'http://localhost:3000/passwordhandler/reset-password?token=' + str(user_object.token) + '\n' +
-                                
-            #                     'If you did not request this change, you can ignore this message.' + '\n'+
-            #                     'Regards, The PasswordHandler Team!',
-            #             from_email=settings.EMAIL_HOST_USER,
-            #             recipient_list=[user_object.email],
-            #             fail_silently=False,
-            #         )
+            cursor.execute('SELECT ip FROM ips WHERE uname = %s ', 
+            [user_object.uname])
+            all_user_ips = cursor.fetchall()
+
+            ip_exist = False
+            for ip in all_user_ips:
+                if ip[0] == request.data.get('userIP'):
+                    ip_exist = True
+    
+            if(ip_exist == False):
+                try:
+                    user_object.email_token = generate_token_two(32)
+                    user_object.save()
+                    send_mail(
+                        subject='New login location detected',
+                        message='Hi ' + user_object.uname + ',' + '\n' +
+                                'We are confirming that a new login location has been detected for ' +
+                                user_object.uname + ' with this IP-address ' + request.data.get('userIP') + '.' + '\n' +
+                                'Click the link and follow the instructions to verify the login. \n' +
+                                'Link: ' + 'http://localhost:3000/passwordhandler/confirmIP?token=' + 
+                                str(user_object.email_token) + '&ip=' + request.data.get('userIP') + '\n' +
+                                'Regards, The PasswordHandler Team!',
+                        from_email=settings.EMAIL_HOST_USER,
+                        recipient_list=[user_object.email],
+                        fail_silently=False,
+                    )
                   
-            #     except SMTPException:
-            #         return Response(status=status.HTTP_404_NOT_FOUND)
+                except SMTPException:
+                    return Response(status=status.HTTP_404_NOT_FOUND)
+                return Response(status=status.HTTP_200_OK)
+            else:
+                token = generate_token(32)
+                user_object.token = token
+                user_object.token_timestamp = None
+                user_object.save()
+
+                token_serializer = UserTokenSerializer(user_object)
+                return Response(token_serializer.data, status=status.HTTP_200_OK) 
 
 
-            token = generate_token(32)
-            user_object.token = token
-            user_object.token_timestamp = None
-            user_object.save()
+class ConfirmIpApiView(APIView):
 
-            token_serializer = UserTokenSerializer(user_object)
-            return Response(token_serializer.data, status=status.HTTP_200_OK) 
+    serializer_class = ConfirmIpApiSerializer
+
+    def post(self, request):
+        
+        if request.method == 'POST':
+            try:
+                user_object = Users.objects.get(email_token=request.data.get('token'))
+            except Users.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            valid_email_token = check_email_token_validity_by_timestamp(user_object)
+            if valid_email_token != True:
+                return Response(valid_email_token, status=status.HTTP_200_OK)
+
+            temp_dict = {}
+            temp_dict = request.data.copy()
+            temp_dict["uname"] = user_object.uname
+            temp_dict["ip"] = request.data.get('userIP')
+
+            serializer = IpsSerializer(data=temp_dict)
+            
+            try:
+                if serializer.is_valid(raise_exception=True):
+                    serializer.save()
+                    result = {"status": True}
+                    return Response(result, status=status.HTTP_201_CREATED)
+            except:
+                result = {"status": False}
+                return Response(result, status=status.HTTP_400_BAD_REQUEST)
 
 
 class SendPasswordResetMailApiView(APIView):
@@ -598,7 +651,6 @@ class GetWebsitePasswordsApiView(APIView):
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
             valid_token = check_token_validity_by_timestamp(user_object)
-
             if valid_token != True:
                 return Response(valid_token, status=status.HTTP_200_OK)
 

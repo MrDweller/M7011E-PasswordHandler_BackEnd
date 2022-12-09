@@ -30,6 +30,7 @@ class ChangeUsernameApiSerializer(serializers.ModelSerializer):
         model = ChangeUsernameApi
         fields = ["token", "new_uname"]
 
+
 class ChangeEmailApiSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChangeEmailApi
@@ -81,7 +82,7 @@ class PasswordsSerializer(serializers.ModelSerializer):
 class PasswordsApiSerializer(serializers.ModelSerializer):
     class Meta:
         model = PasswordsApi
-        fields = ["uname", "your_password", "website_url", "website_uname"]
+        fields = ["token", "password", "website_url", "website_uname"]
         
 
 class RemoveUserSerializer(serializers.ModelSerializer):
@@ -106,6 +107,12 @@ class RemoveIpsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ips
         fields = ["uname"]
+
+
+class ConfirmIpApiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = IpConfirmation
+        fields = ["token", "userIP"]
 
 
 class ChangePasswordUserApiSerializer(serializers.ModelSerializer):
@@ -137,6 +144,10 @@ class UserTokenSerializer(serializers.ModelSerializer):
         model = Users
         fields = ["token", "token_timestamp"]
 
+class UserEmailTokenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Users
+        fields = ["email_token", "email_token_timestamp"]
 
 class ReadAllUserPasswordsSerializer(serializers.ModelSerializer):
     class Meta:
