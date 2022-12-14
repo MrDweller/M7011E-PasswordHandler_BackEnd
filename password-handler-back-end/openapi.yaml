@@ -1,0 +1,651 @@
+openapi: 3.0.3
+info:
+  title: Swagger Passwordhandler
+  description: Api docs for passwordhandler
+  version: 1.0.0
+servers:
+- url: http://localhost:8080
+tags:
+- name: user
+  description: Operations about user
+paths:
+  /user:
+    post:
+      tags:
+      - user
+      summary: Create user
+      description: "This creates a new user, on signup."
+      operationId: createUser
+      requestBody:
+        description: Created user object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        "201":
+          description: successful operation
+        "400":
+          description: Invalid credentials supplied
+      x-swagger-router-controller: User
+  /user/{uname}/login:
+    post:
+      tags:
+      - user
+      summary: "Logs user, generating an access token for that user."
+      description: ""
+      operationId: loginUser
+      parameters:
+      - name: uname
+        in: path
+        description: The user name for login
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: The password for login in clear text
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Authentication'
+      responses:
+        "200":
+          description: successful operation
+          headers:
+            userToken:
+              style: simple
+              explode: false
+              schema:
+                $ref: '#/components/schemas/Token'
+        "400":
+          description: Invalid uname/password supplied
+      x-swagger-router-controller: User
+  /user/{uname}/logout:
+    get:
+      tags:
+      - user
+      summary: Logs out the user with the given token.
+      description: ""
+      operationId: logoutUser
+      parameters:
+      - name: uname
+        in: path
+        description: The name that needs to be fetched.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: userToken
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: Invalid username/password supplied
+      x-swagger-router-controller: User
+  /user/{uname}/confirmIp:
+    post:
+      tags:
+      - user
+      summary: Confirms the given ip of the user with the given token.
+      description: ""
+      operationId: confirmIpUser
+      parameters:
+      - name: uname
+        in: path
+        description: The name that needs to be fetched.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: emailToken
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      requestBody:
+        description: Confirme a given ip
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ip'
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: Invalid username or token supplied
+      x-swagger-router-controller: User
+  /user/{uname}:
+    get:
+      tags:
+      - user
+      summary: Get user by user name
+      description: This can only be done by the logged in user.
+      operationId: getUserByName
+      parameters:
+      - name: uname
+        in: path
+        description: The name that needs to be fetched.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: userToken
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        "400":
+          description: Invalid uname and token supplied
+        "404":
+          description: User not found
+      x-swagger-router-controller: User
+    put:
+      tags:
+      - user
+      summary: Update user
+      description: This can only be done by the logged in user.
+      operationId: updateUser
+      parameters:
+      - name: uname
+        in: path
+        description: uname for user to be updated
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: userToken
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      requestBody:
+        description: Update an existent user
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: Invalid uname and token supplied
+      x-swagger-router-controller: User
+    delete:
+      tags:
+      - user
+      summary: Delete user
+      description: This can only be done by the logged in user.
+      operationId: deleteUser
+      parameters:
+      - name: uname
+        in: path
+        description: The uname for the user
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: userToken
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: Invalid uname and token supplied
+        "404":
+          description: User not found
+      x-swagger-router-controller: User
+  /password/{uname}:
+    put:
+      tags:
+      - password
+      summary: Decrypt password
+      description: This decrypts a password and retrives it.
+      operationId: decryptPassword
+      parameters:
+      - name: uname
+        in: path
+        description: The uname for the user
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: userToken
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      requestBody:
+        description: ""
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebsitePasswordAuthentication'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WebsitePassword'
+                x-content-type: application/json
+        "400":
+          description: Invalid credentials supplied
+      x-swagger-router-controller: Password
+    post:
+      tags:
+      - password
+      summary: Create password
+      description: This creates a new password for a user.
+      operationId: createPassword
+      parameters:
+      - name: uname
+        in: path
+        description: The uname for the user
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: userToken
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      requestBody:
+        description: ""
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebsitePasswordAuthentication'
+      responses:
+        "201":
+          description: successful operation
+        "400":
+          description: Invalid credentials supplied
+      x-swagger-router-controller: Password
+  /passwords/{uname}:
+    get:
+      tags:
+      - passwords
+      summary: Read all passwords
+      description: This gives all passwords for an user.
+      operationId: readPasswords
+      parameters:
+      - name: uname
+        in: path
+        description: The uname for the user
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: userToken
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WebsitePasswordInfo'
+                x-content-type: application/json
+        "400":
+          description: Invalid credentials supplied
+      x-swagger-router-controller: Passwords
+  /admin:
+    post:
+      tags:
+      - admin
+      summary: Create admin
+      description: "This creates a new user, on signup."
+      operationId: createAdmin
+      parameters:
+      - name: superAdminToken
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      requestBody:
+        description: Created admin object
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserInfo'
+      responses:
+        "201":
+          description: successful operation
+        "400":
+          description: Invalid credentials supplied
+      x-swagger-router-controller: Admin
+  /admin/{uname}/login:
+    post:
+      tags:
+      - admin
+      summary: "Logs in admin, generating an access token for that admin."
+      description: ""
+      operationId: loginAdmin
+      parameters:
+      - name: uname
+        in: path
+        description: The user name for login
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: The password for login in clear text
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Authentication'
+      responses:
+        "200":
+          description: successful operation
+          headers:
+            adminToken:
+              style: simple
+              explode: false
+              schema:
+                $ref: '#/components/schemas/Token'
+        "400":
+          description: Invalid uname/password supplied
+      x-swagger-router-controller: Admin
+  /admin/{uname}/logout:
+    get:
+      tags:
+      - admin
+      summary: Logs out the admin with the given token.
+      description: ""
+      operationId: logoutAdmin
+      parameters:
+      - name: uname
+        in: path
+        description: The name that needs to be fetched.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: adminToken
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: Invalid username/password supplied
+      x-swagger-router-controller: Admin
+  /admin/{uname}/confirmIp:
+    post:
+      tags:
+      - admin
+      summary: Confirms the given ip of the user with the given token.
+      description: ""
+      operationId: confirmIpAdmin
+      parameters:
+      - name: uname
+        in: path
+        description: The name that needs to be fetched.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: emailToken
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      requestBody:
+        description: Confirme a given ip
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ip'
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: Invalid username or token supplied
+      x-swagger-router-controller: Admin
+  /admin/{uname}:
+    get:
+      tags:
+      - admin
+      summary: Get admin by user name
+      description: This can only be done by the logged in user.
+      operationId: getAdminByName
+      parameters:
+      - name: uname
+        in: path
+        description: The name that needs to be fetched.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: adminToken
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        "400":
+          description: Invalid uname and token supplied
+        "404":
+          description: User not found
+      x-swagger-router-controller: Admin
+    put:
+      tags:
+      - admin
+      summary: Update admin
+      description: This can only be done by the logged in user.
+      operationId: updateAdmin
+      parameters:
+      - name: uname
+        in: path
+        description: uname for user to be updated
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: adminToken
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      requestBody:
+        description: Update an existent user
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: Invalid uname and token supplied
+      x-swagger-router-controller: Admin
+    delete:
+      tags:
+      - admin
+      summary: Delete admin
+      description: This can only be done by the logged in user.
+      operationId: deleteAdmin
+      parameters:
+      - name: uname
+        in: path
+        description: The uname for the user
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: adminToken
+        in: header
+        required: false
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      - name: superAdminToken
+        in: header
+        required: false
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: Invalid uname and token supplied
+        "404":
+          description: User not found
+      x-swagger-router-controller: Admin
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        uname:
+          type: string
+          example: john
+        email:
+          type: string
+          example: john@email.com
+        password:
+          type: string
+          example: "12345"
+    UserInfo:
+      type: object
+      properties:
+        uname:
+          type: string
+          example: john
+        email:
+          type: string
+          example: john@email.com
+      example:
+        uname: john
+        email: john@email.com
+    Token:
+      type: string
+      example: Xey27tst7
+    Authentication:
+      type: object
+      properties:
+        password:
+          type: string
+          example: "12345"
+    WebsitePasswordAuthentication:
+      type: object
+      properties:
+        password:
+          type: string
+          example: "12345"
+        website_url:
+          type: string
+          example: google.com
+        website_uname:
+          type: string
+          example: john
+    WebsitePasswordInfo:
+      type: object
+      properties:
+        website_url:
+          type: string
+          example: google.com
+        website_uname:
+          type: string
+          example: john
+      example:
+        website_url: google.com
+        website_uname: john
+    WebsitePassword:
+      type: object
+      properties:
+        website_url:
+          type: string
+          example: google.com
+        website_uname:
+          type: string
+          example: john
+        website_password:
+          type: string
+          example: "12345"
+      example:
+        website_url: google.com
+        website_uname: john
+        website_password: "12345"
+    Ip:
+      type: object
+      properties:
+        ip:
+          type: string
+          example: 192.168.1.1
