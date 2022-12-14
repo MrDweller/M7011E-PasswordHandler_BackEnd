@@ -43,14 +43,20 @@ class UserApiView(APIView):
 
             temp_dict['encrypted_key'] = temp_encryption.hex()
             temp_dict['iv'] = iv.hex()
+            temp_dict["ip"] = request.data.get('userIP')
+            # print("JINGSEN 2lax10 ", request.data.get('userIP'))
 
             # Add all the fields from the API call to the database
             serializer = UserSerializer(data=temp_dict)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
+            
+            serializer_ip = IpsSerializer(data=temp_dict)
+            if serializer_ip.is_valid(raise_exception=True):
+                serializer_ip.save()
                 result = {"status": True}
-
                 return Response(result, status=status.HTTP_201_CREATED)
+
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -444,7 +450,6 @@ class ChangeWebsitePasswordsApiView(APIView):
             return Response(status=status.HTTP_200_OK)
 
 
-# in progress
 class LoginApiView(APIView):
 
     serializer_class = LoginApiSerializer
@@ -484,7 +489,7 @@ class LoginApiView(APIView):
     
             if(ip_exist == False):
                 try:
-                    user_object.email_token = generate_token_two(32)
+                    user_object.email_token = generate_token(32)
                     user_object.save()
                     send_mail(
                         subject='New login location detected',

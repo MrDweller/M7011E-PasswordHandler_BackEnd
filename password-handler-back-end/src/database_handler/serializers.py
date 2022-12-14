@@ -144,10 +144,12 @@ class UserTokenSerializer(serializers.ModelSerializer):
         model = Users
         fields = ["token", "token_timestamp"]
 
+
 class UserEmailTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = Users
         fields = ["email_token", "email_token_timestamp"]
+
 
 class ReadAllUserPasswordsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -159,6 +161,7 @@ class ReadPasswordsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Passwords
         fields = ["website_uname", "website_url"]
+
 
 class GetPasswordApiSerializer(serializers.ModelSerializer):
     class Meta:

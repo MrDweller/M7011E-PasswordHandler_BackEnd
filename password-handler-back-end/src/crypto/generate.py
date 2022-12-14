@@ -15,10 +15,6 @@ def get_password(length):
 
 
 def generate_token(length):
-    return b64encode(get_random_bytes(length))
-
-
-def generate_token_two(length):
     ran = ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase + string.digits, k=length)) 
     return str(ran)  
 

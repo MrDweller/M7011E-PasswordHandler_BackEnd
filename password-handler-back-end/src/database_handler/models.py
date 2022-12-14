@@ -38,7 +38,6 @@ class FeedbackApi(models.Model):
     id = models.IntegerField(primary_key=True)
 
 
-""" TODO: See views.py for its APIView """
 class Ips(models.Model):
     uname = models.ForeignKey('Users', models.DO_NOTHING, db_column='uname')
     ip = models.CharField(max_length=128)
