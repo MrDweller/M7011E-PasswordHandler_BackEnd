@@ -21,7 +21,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              $ref: '#/components/schemas/NewUser'
       responses:
         "201":
           description: successful operation
@@ -357,7 +357,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserInfo'
+              $ref: '#/components/schemas/NewAdmin'
       responses:
         "201":
           description: successful operation
@@ -570,6 +570,21 @@ paths:
       x-swagger-router-controller: Admin
 components:
   schemas:
+    NewUser:
+      type: object
+      properties:
+        uname:
+          type: string
+          example: john
+        email:
+          type: string
+          example: john@email.com
+        password:
+          type: string
+          example: "12345"
+        ip:
+          type: string
+          example: 192.168.1.1
     User:
       type: object
       properties:
@@ -603,6 +618,9 @@ components:
         password:
           type: string
           example: "12345"
+        ip:
+          type: string
+          example: 192.168.1.1
     WebsitePasswordAuthentication:
       type: object
       properties:
@@ -643,6 +661,20 @@ components:
         website_url: google.com
         website_uname: john
         website_password: "12345"
+        
+    NewAdmin:
+      type: object
+      properties:
+        uname:
+          type: string
+          example: john
+        email:
+          type: string
+          example: john@email.com
+        ip:
+          type: string
+          example: 192.168.1.1
+          
     Ip:
       type: object
       properties:
