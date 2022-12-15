@@ -54,7 +54,7 @@ paths:
         "200":
           description: successful operation
           headers:
-            userToken:
+            user_token:
               style: simple
               explode: false
               schema:
@@ -78,7 +78,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: userToken
+      - name: user_token
         in: header
         required: true
         style: simple
@@ -107,7 +107,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: emailToken
+      - name: email_token
         in: header
         required: true
         style: simple
@@ -142,7 +142,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: userToken
+      - name: user_token
         in: header
         required: true
         style: simple
@@ -176,7 +176,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: userToken
+      - name: user_token
         in: header
         required: true
         style: simple
@@ -210,7 +210,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: userToken
+      - name: user_token
         in: header
         required: true
         style: simple
@@ -241,7 +241,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: userToken
+      - name: user_token
         in: header
         required: true
         style: simple
@@ -282,7 +282,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: userToken
+      - name: user_token
         in: header
         required: true
         style: simple
@@ -317,7 +317,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: userToken
+      - name: user_token
         in: header
         required: true
         style: simple
@@ -345,7 +345,7 @@ paths:
       description: "This creates a new user, on signup."
       operationId: createAdmin
       parameters:
-      - name: superAdminToken
+      - name: super_admin_token
         in: header
         required: true
         style: simple
@@ -390,7 +390,7 @@ paths:
         "200":
           description: successful operation
           headers:
-            adminToken:
+            admin_token:
               style: simple
               explode: false
               schema:
@@ -414,7 +414,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: adminToken
+      - name: admin_token
         in: header
         required: true
         style: simple
@@ -443,7 +443,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: emailToken
+      - name: email_token
         in: header
         required: true
         style: simple
@@ -478,7 +478,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: adminToken
+      - name: admin_token
         in: header
         required: true
         style: simple
@@ -512,7 +512,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: adminToken
+      - name: admin_token
         in: header
         required: true
         style: simple
@@ -546,14 +546,14 @@ paths:
         explode: false
         schema:
           type: string
-      - name: adminToken
+      - name: admin_token
         in: header
         required: false
         style: simple
         explode: false
         schema:
           $ref: '#/components/schemas/Token'
-      - name: superAdminToken
+      - name: super_admin_token
         in: header
         required: false
         style: simple
