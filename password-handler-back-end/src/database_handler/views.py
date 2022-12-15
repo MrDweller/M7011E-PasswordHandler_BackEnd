@@ -16,7 +16,6 @@ from rest_framework.views import APIView
 from .models import *
 from .serializers import *
 
-
 class UserApiView(APIView):
 
     # A new serializer is created for API input
@@ -28,6 +27,7 @@ class UserApiView(APIView):
 
             temp_dict = {}
             temp_dict = request.data.copy()
+            print(temp_dict)
             hashed_password = hash_password(temp_dict.get("password"))
             hashed_hashed_password = hash_password(hashed_password[0])
 
@@ -43,33 +43,168 @@ class UserApiView(APIView):
 
             temp_dict['encrypted_key'] = temp_encryption.hex()
             temp_dict['iv'] = iv.hex()
-            temp_dict["ip"] = request.data.get('userIP')
-            # print("JINGSEN 2lax10 ", request.data.get('userIP'))
+            temp_dict["ip"] = request.data.get('ip')
 
             # Add all the fields from the API call to the database
             serializer = UserSerializer(data=temp_dict)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
             
-            serializer_ip = IpsSerializer(data=temp_dict)
-            if serializer_ip.is_valid(raise_exception=True):
-                serializer_ip.save()
-                result = {"status": True}
-                return Response(result, status=status.HTTP_201_CREATED)
+            serializer = IpsSerializer(data=temp_dict)
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response(status=status.HTTP_201_CREATED)
 
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class GetUserApiView(APIView):
-    def post(self, request):
-        if request.method == 'POST': 
-            data = Users.objects.get(token=request.data.get('token'))
-            valid_token = check_token_validity_by_timestamp(data)
-            if valid_token != True:
-                return Response(valid_token, status=status.HTTP_200_OK)
 
-            serializer = GetUserSerializer(data)
+    def get(self, request, uname, format=None):
+
+        admin = False
+        try:
+            user_object = Users.objects.get(uname=uname)
+        except Users.DoesNotExist:
+            user_object = Admins.objects.get(uname=uname)
+            admin = True
+        except:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
+        if admin == False:
+            userToken = request.headers.get("user_token")
+        else:
+            userToken = request.headers.get("admin_token")
+            
+        if userToken != user_object.token:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+        valid_token = check_token_validity_by_timestamp(user_object)
+        if valid_token != True:
+            return Response(valid_token, status=status.HTTP_200_OK)
+
+        if request.method == 'GET': 
+            if admin == False:
+                serializer = UsersSerializer(user_object)
+            else:
+                serializer = AdminSerializer(user_object)
             return Response(serializer.data)
+
+    def put(self, request, uname, format=None):
+        
+        admin = False
+        try:
+            user_object = Users.objects.get(uname=uname)
+        except Users.DoesNotExist:
+            user_object = Admins.objects.get(uname=uname)
+            admin = True
+        except:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
+        if admin == False:
+            userToken = request.headers.get("user_token")
+        else:
+            userToken = request.headers.get("admin_token")
+            
+        if userToken != user_object.token:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+        valid_token = check_token_validity_by_timestamp(user_object)
+        if valid_token != True:
+            return Response(valid_token, status=status.HTTP_200_OK)
+
+        if request.method == 'PUT': 
+            if request.data.get('uname') != None:
+                user_object.uname = request.data.get('uname')
+                user_object.save()
+                return Response(status=status.HTTP_200_OK)
+            
+            if request.data.get('email') != None:
+                user_object.email = request.data.get('email')
+                user_object.save()
+                return Response(status=status.HTTP_200_OK)
+
+            if request.data.get('password') != None:
+                try:
+                    user_object_passwords = Passwords.objects.filter(uname=user_object.uname)
+                except Passwords.DoesNotExist:
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+                
+                temp_dict = {}
+                temp_dict = request.data.copy()
+
+                if admin==False:
+                    old_masterpwd_decrypted = temp_dict.get('password')
+                    old_masterpwd_hashed = hash_password_salt(old_masterpwd_decrypted, user_object.salt_1)
+                    old_masterpwd_hashedhashed = hash_password_salt(old_masterpwd_hashed, user_object.salt_2)
+
+                    if (old_masterpwd_hashedhashed != user_object.hashedhashed_masterpwd):
+                        return Response(status=status.HTTP_400_BAD_REQUEST)
+
+                    hashed_password = hash_password(temp_dict.get("newPassword"))
+                    hashed_hashed_password = hash_password(hashed_password[0])
+
+                    key = codecs.decode(user_object.encrypted_key, 'hex_codec')
+                    iv = codecs.decode(user_object.iv, 'hex_codec')
+                    decrypted_key = decrypt_data(key, old_masterpwd_hashed.encode(), iv)
+                    encrypted_key = encrypt_data(decrypted_key, hashed_password[0].encode(), iv)
+                    
+                    for password in user_object_passwords:
+
+                        website_password_iv = codecs.decode(password.iv, 'hex_codec')
+
+                        dehexed_password = codecs.decode(password.encrypted_pwd, 'hex_codec')
+                        decrypted_website_password = decrypt_data(dehexed_password, decrypted_key, website_password_iv)
+                        encrypted_website_password = encrypt_data(decrypted_website_password, decrypted_key, website_password_iv)
+                        password.encrypted_pwd = encrypted_website_password.hex()
+                        password.save()
+
+                    user_object.hashedhashed_masterpwd = hashed_hashed_password[0]
+                    user_object.salt_1 = hashed_password[1]
+                    user_object.salt_2 = hashed_hashed_password[1]
+                    user_object.encrypted_key = encrypted_key.hex()
+                    user_object.save()
+                    return Response(status=status.HTTP_200_OK)
+
+                else:
+                    old_masterpwd_decrypted = temp_dict.get('password')
+                    old_masterpwd_hashed = hash_password_salt(old_masterpwd_decrypted, user_object.salt)
+
+                    if (old_masterpwd_hashed != user_object.hashed_pwd):
+                        return Response(status=status.HTTP_400_BAD_REQUEST)
+                    
+                    hashed_password = hash_password(temp_dict.get("password"))
+                    user_object.pwd = hashed_password[0]
+                    user_object.salt = hashed_password[1]
+                    user_object.save()
+                    return Response(status=status.HTTP_200_OK)
+
+    def delete(self, request, uname, format=None):
+        admin = False
+        try:
+            user_object = Users.objects.get(uname=uname)
+        except Users.DoesNotExist:
+            user_object = Admins.objects.get(uname=uname)
+            admin = True
+        except:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
+        if admin == False:
+            userToken = request.headers.get("user_token")
+        else:
+            userToken = request.headers.get("admin_token")
+            
+        if userToken != user_object.token:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+        valid_token = check_token_validity_by_timestamp(user_object)
+        if valid_token != True:
+            return Response(valid_token, status=status.HTTP_200_OK)
+
+
+        if request.method == 'DELETE':
+            user_object.delete()
+            return Response(status=status.HTTP_200_OK)
 
 
 class UsersApiView(APIView):
@@ -126,31 +261,48 @@ class AdminsApiView(APIView):
             return Response(serializer.data)
 
 
+#On hold, not decided what to do with password yet
 class AdminApiView(APIView):
 
     serializer_class = AdminsSerializerApi
 
     def post(self, request):
+        superAdminToken = request.headers.get("super_admin_token")
+
+        try:
+            admin_object = Admins.objects.get(token=superAdminToken)
+            superAdmin_object = SuperAdmins.objects.get(uname=admin_object.uname)
+        except Admins.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        except:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        if superAdminToken != admin_object.token:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+        valid_token = check_token_validity_by_timestamp(admin_object)
+        if valid_token != True:
+            return Response(valid_token, status=status.HTTP_200_OK)
+
         if request.method == 'POST':
 
             temp_dict = {}
             temp_dict = request.data.copy()
 
-            hashed_password = hash_password(temp_dict.get("password"))
-
-            key = generate_key()
-            iv = generate_iv()
+            hashed_password = hash_password(request.data.get('password'))
 
             temp_dict['hashed_pwd'] = hashed_password[0]
             temp_dict['salt'] = hashed_password[1]
 
-            # encrypting key
-            temp_encryption = encrypt_data(key, hashed_password[0].encode(), iv)
-            temp_dict['encrypted_key'] = temp_encryption.hex()
-            temp_dict['iv'] = iv.hex()
+            temp_dict["ip"] = request.data.get('ip')
 
             serializer = AdminsSerializer(data=temp_dict)
 
+            if serializer.is_valid(raise_exception=True):
+                serializer.save()
+                return Response(status=status.HTTP_201_CREATED)
+            
+            serializer = IpsSerializer(data=temp_dict)
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
                 return Response(status=status.HTTP_201_CREATED)
@@ -181,12 +333,7 @@ class SuperAdminsApiView(APIView):
             return Response(status=status.HTTP_201_CREATED)
 
 
-""" TODO:
-    1. Prettify the response
-    2. Query for a certain user
-    3. Get the money
-"""
-class IpsApiView(APIView):
+class   IpsApiView(APIView):
 
     def get(self, request):
         if request.method == 'GET':
@@ -239,19 +386,23 @@ class NewWebsitePasswordsApiView(APIView):
 
     serializer_class = PasswordsApiSerializer
 
-    def post(self, request):
+    def post(self, request, uname, format=None):
+
+        try:
+            user_object = Users.objects.get(uname=uname)
+        except Users.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        userToken = request.headers.get("user_token")
+        if userToken != user_object.token:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+        valid_token = check_token_validity_by_timestamp(user_object)
+        if valid_token != True:
+            return Response(valid_token, status=status.HTTP_200_OK)
+        
 
         if request.method == 'POST':
-            print(request.data)
-            try:
-                user_object = Users.objects.get(token=request.data.get('token'))
-            except Users.DoesNotExist:
-                print("här")
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-
-            valid_token = check_token_validity_by_timestamp(user_object)
-            if valid_token != True:
-                return Response(valid_token, status=status.HTTP_200_OK)
 
             temp_dict = {}
             temp_dict = request.data.copy()
@@ -261,7 +412,7 @@ class NewWebsitePasswordsApiView(APIView):
             masterpwd_hashedhashed = hash_password_salt(masterpwd_hashed, user_object.salt_2)
 
             if (masterpwd_hashedhashed != user_object.hashedhashed_masterpwd):
-                return Response(status=status.HTTP_409_CONFLICT)
+                return Response(status=status.HTTP_400_CONFLICT)
 
             key = codecs.decode(user_object.encrypted_key, 'hex_codec')  # from hex to byte
             iv = codecs.decode(user_object.iv, 'hex_codec')
@@ -280,8 +431,53 @@ class NewWebsitePasswordsApiView(APIView):
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
                 return Response(status=status.HTTP_201_CREATED)
-            print("bleh")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def put(self, request, uname, format=None):
+
+        try:
+            user_object = Users.objects.get(uname=uname)
+        except Users.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        userToken = request.headers.get("user_token")
+        if userToken != user_object.token:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+        valid_token = check_token_validity_by_timestamp(user_object)
+        if valid_token != True:
+            return Response(valid_token, status=status.HTTP_200_OK)
+
+        
+        if request.method == 'PUT':
+            try:
+                password = Passwords.objects.get(uname=user_object.uname, 
+                                                    website_url=request.data.get('website_url'), 
+                                                    website_uname=request.data.get('website_uname'))
+            except Passwords.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
+            temp_dict = {}
+            temp_dict = request.data.copy()
+
+            masterpwd_decrypted = temp_dict.get('password')
+            masterpwd_hashed = hash_password_salt(masterpwd_decrypted, user_object.salt_1)
+            masterpwd_hashedhashed = hash_password_salt(masterpwd_hashed, user_object.salt_2)
+
+            if (masterpwd_hashedhashed != user_object.hashedhashed_masterpwd):
+                return Response(status=status.HTTP_409_CONFLICT)
+
+            key = codecs.decode(user_object.encrypted_key, 'hex_codec')  # from hex to byte
+            iv = codecs.decode(user_object.iv, 'hex_codec')
+
+            website_password_iv = codecs.decode(password.iv, 'hex_codec')
+            decrypted_key = decrypt_data(key, masterpwd_hashed.encode(), iv)
+            decrypted_website_password = b64encode(decrypt_data(password.encrypted_pwd.encode(), decrypted_key, website_password_iv)).decode("utf-8")
+
+            temp_dict['password'] = decrypted_website_password
+
+            serializer = GetPasswordApiSerializer(temp_dict)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class RemoveUserApiView(APIView):
@@ -355,6 +551,7 @@ class RemoveUserFromIpsApiView(APIView):
             return Response(status=status.HTTP_200_OK)
 
 
+""" Maybe remove? See put method in class NewWebsitePasswordsApiView """
 class ChangeUserPasswordApiView(APIView):
 
     serializer_class = ChangePasswordUserApiSerializer
@@ -454,7 +651,7 @@ class LoginApiView(APIView):
 
     serializer_class = LoginApiSerializer
 
-    def post(self, request):
+    def post(self, request, uname, format=None):
 
         cursor = connection.cursor()
 
@@ -462,12 +659,12 @@ class LoginApiView(APIView):
             temp_dict = {}
             temp_dict = request.data.copy()
 
+            admin=False
             try:
-                user_object = Users.objects.get(uname=request.data.get('identification'))
-                temp_dict['uname'] = request.data.get('identification')
+                user_object = Users.objects.get(uname=uname)
             except Users.DoesNotExist:
-                user_object = Users.objects.get(email=request.data.get('identification'))
-                temp_dict['email'] = request.data.get('identification')
+                user_object = Admins.objects.get(uname=uname)
+                admin = True
             except:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -478,13 +675,12 @@ class LoginApiView(APIView):
             if (masterpwd_hashedhashed != user_object.hashedhashed_masterpwd):
                 return Response(status=status.HTTP_409_CONFLICT)
 
-            cursor.execute('SELECT ip FROM ips WHERE uname = %s ', 
-            [user_object.uname])
+            cursor.execute('SELECT ip FROM ips WHERE uname = %s ', [user_object.uname])
             all_user_ips = cursor.fetchall()
 
             ip_exist = False
             for ip in all_user_ips:
-                if ip[0] == request.data.get('userIP'):
+                if ip[0] == request.data.get('ip'):
                     ip_exist = True
     
             if(ip_exist == False):
@@ -495,10 +691,10 @@ class LoginApiView(APIView):
                         subject='New login location detected',
                         message='Hi ' + user_object.uname + ',' + '\n' +
                                 'We are confirming that a new login location has been detected for ' +
-                                user_object.uname + ' with this IP-address ' + request.data.get('userIP') + '.' + '\n' +
+                                user_object.uname + ' with this IP-address ' + request.data.get('ip') + '.' + '\n' +
                                 'Click the link and follow the instructions to verify the login. \n' +
                                 'Link: ' + 'http://localhost:3000/passwordhandler/confirmIP?token=' + 
-                                str(user_object.email_token) + '&ip=' + request.data.get('userIP') + '\n' +
+                                str(user_object.email_token) + '&ip=' + request.data.get('ip') + '\n' +
                                 'Regards, The PasswordHandler Team!',
                         from_email=settings.EMAIL_HOST_USER,
                         recipient_list=[user_object.email],
@@ -514,41 +710,79 @@ class LoginApiView(APIView):
                 user_object.token_timestamp = None
                 user_object.save()
 
-                token_serializer = UserTokenSerializer(user_object)
-                return Response(token_serializer.data, status=status.HTTP_200_OK) 
+                response = Response(status=status.HTTP_200_OK)
+                if(admin==False): 
+                    response['user_token'] = token
+                else:
+                    response['admin_token'] = token
+                return response
+
+
+class LogoutApiView(APIView):
+    
+    def get(self, request, uname, format=None):
+        
+        if request.method == 'GET':
+            admin = False
+            try:
+                user_object = Users.objects.get(uname=uname)
+            except Users.DoesNotExist:
+                user_object = Admins.objects.get(uname=uname)
+                admin = True
+            except:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            
+            if admin==False:
+                userToken = request.headers.get("user_token")
+            else:
+                userToken = request.headers.get("admin_token")
+
+            if userToken != user_object.token:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+            
+            temp_dict = {}
+            temp_dict = request.data.copy()
+            temp_dict["error"] = "INVALID_TOKEN"
+
+            return Response(temp_dict, status=status.HTTP_200_OK)
 
 
 class ConfirmIpApiView(APIView):
 
     serializer_class = ConfirmIpApiSerializer
 
-    def post(self, request):
+    def post(self, request, uname, format=None):
         
         if request.method == 'POST':
+            admin = False
             try:
-                user_object = Users.objects.get(email_token=request.data.get('token'))
+                user_object = Users.objects.get(uname=uname)
             except Users.DoesNotExist:
+                user_object = Admins.objects.get(uname=uname)
+                admin =True
+            except:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
             valid_email_token = check_email_token_validity_by_timestamp(user_object)
             if valid_email_token != True:
                 return Response(valid_email_token, status=status.HTTP_200_OK)
 
+            emailToken = request.headers.get("email_token")
+            if emailToken != user_object.email_token:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
+
             temp_dict = {}
             temp_dict = request.data.copy()
             temp_dict["uname"] = user_object.uname
-            temp_dict["ip"] = request.data.get('userIP')
 
             serializer = IpsSerializer(data=temp_dict)
             
             try:
                 if serializer.is_valid(raise_exception=True):
                     serializer.save()
-                    result = {"status": True}
-                    return Response(result, status=status.HTTP_201_CREATED)
+                    return Response(status=status.HTTP_201_CREATED)
             except:
-                result = {"status": False}
-                return Response(result, status=status.HTTP_400_BAD_REQUEST)
+                return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 class SendPasswordResetMailApiView(APIView):
@@ -616,24 +850,32 @@ class ResetUserPasswordApiView(APIView):
 
 
 class ReadAllUserPasswordsView(APIView):
+
     serializer_class = ReadAllUserPasswordsSerializer
 
-    def post(self, request):
+    def get(self, request, uname, format=None):
+
+        try:
+            user_object = Users.objects.get(uname=uname)
+        except Users.DoesNotExist:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        userToken = request.headers.get("user_token")
+        if userToken != user_object.token:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        
+        valid_token = check_token_validity_by_timestamp(user_object)
+        if valid_token != True:
+            return Response(valid_token, status=status.HTTP_200_OK)
        
-        if request.method == 'POST':
+        if request.method == 'GET':
             try:
-                user_object = Users.objects.get(token=request.data.get('token'))
                 passwords = Passwords.objects.filter(uname=user_object.uname)
-            except Users.DoesNotExist:
-                return Response(status=status.HTTP_404_NOT_FOUND)
+            except Passwords.DoesNotExist:
+                return Response(status=status.HTTP_400_BAD_REQUEST)
 
-            valid_token = check_token_validity_by_timestamp(user_object)
-
-            if valid_token == True:
-                serializer = ReadPasswordsSerializer(passwords, context={'request': request}, many=True)
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            else: # not a valid token
-                return Response(valid_token, status=status.HTTP_200_OK)
+            serializer = ReadPasswordsSerializer(passwords, context={'request': request}, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class GetWebsitePasswordsApiView(APIView):
@@ -680,5 +922,3 @@ class GetWebsitePasswordsApiView(APIView):
 
             serializer = GetPasswordApiSerializer(temp_dict)
             return Response(serializer.data, status=status.HTTP_200_OK)
-
-

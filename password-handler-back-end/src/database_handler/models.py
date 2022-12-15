@@ -13,6 +13,7 @@ class Admins(models.Model):
     email = models.CharField(unique=True, max_length=128)
     hashed_pwd = models.CharField(max_length=128)
     salt = models.CharField(max_length=128)
+    token = models.CharField(max_length=256)
 
     class Meta:
         managed = False
@@ -22,7 +23,7 @@ class Admins(models.Model):
 class AdminsApi(models.Model):
     uname = models.CharField(primary_key=True, max_length=128)
     email = models.CharField(unique=True, max_length=128)
-    password = models.CharField(max_length=128)
+    ip = models.CharField(max_length=128)
 
 
 class Feedback(models.Model):
@@ -51,8 +52,7 @@ class Ips(models.Model):
 
 
 class IpConfirmation(models.Model):
-    token = models.CharField(max_length=256)
-    userIP = models.CharField(max_length=128)
+    ip = models.CharField(max_length=128)
 
 
 class Passwords(models.Model):
@@ -69,7 +69,6 @@ class Passwords(models.Model):
 
 
 class PasswordsApi(models.Model):
-    token = models.CharField(max_length=256)
     password = models.CharField(max_length=256)
     website_url = models.CharField(max_length=128)
     website_uname = models.CharField(max_length=128)
@@ -134,8 +133,8 @@ class ChangeEmailApi(models.Model):
 
 
 class LoginApi(models.Model):
-    identification = models.CharField(primary_key=True, max_length=128)
     password = models.CharField(max_length=128)
+    ip = models.CharField(max_length=128)
 
 
 class UserResetPasswordApi(models.Model):

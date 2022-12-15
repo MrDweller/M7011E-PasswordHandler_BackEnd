@@ -42,11 +42,16 @@ class AdminsSerializer(serializers.ModelSerializer):
         model = Admins
         fields = ["uname", "email", "hashed_pwd", "salt"]
 
+class AdminSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Admins
+        fields = ["uname", "email"]
+
 
 class AdminsSerializerApi(serializers.ModelSerializer):
     class Meta:
         model = AdminsApi
-        fields = ["uname", "email", "password"]
+        fields = ["uname", "email", "ip"]
 
 
 class SuperAdminsSerializer(serializers.ModelSerializer):
@@ -82,7 +87,7 @@ class PasswordsSerializer(serializers.ModelSerializer):
 class PasswordsApiSerializer(serializers.ModelSerializer):
     class Meta:
         model = PasswordsApi
-        fields = ["token", "password", "website_url", "website_uname"]
+        fields = ["password", "website_url", "website_uname"]
         
 
 class RemoveUserSerializer(serializers.ModelSerializer):
@@ -112,7 +117,7 @@ class RemoveIpsSerializer(serializers.ModelSerializer):
 class ConfirmIpApiSerializer(serializers.ModelSerializer):
     class Meta:
         model = IpConfirmation
-        fields = ["token", "userIP"]
+        fields = ["ip"]
 
 
 class ChangePasswordUserApiSerializer(serializers.ModelSerializer):
@@ -124,7 +129,7 @@ class ChangePasswordUserApiSerializer(serializers.ModelSerializer):
 class LoginApiSerializer(serializers.ModelSerializer):
     class Meta:
         model = LoginApi
-        fields = ["identification", "password"]
+        fields = ["password", "ip"]
 
 
 class SendPasswordResetMailApiSerializer(serializers.ModelSerializer):
