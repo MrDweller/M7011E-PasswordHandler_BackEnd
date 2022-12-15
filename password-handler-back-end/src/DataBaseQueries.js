@@ -154,13 +154,13 @@ class DataBaseQueries {
             else {
                 try {
                     console.log("Number affected rows " + result.affectedRows);
-                    let token = result[0]["token"];
+                    let token = result[0]["email_token"];
                     console.log(token);
-                    callback(token);
+                    callback(null, token);
 
                 }
                 catch (error) {
-                    callback(null);
+                    callback(error);
                 }
             }
         });

@@ -11,6 +11,8 @@ const { response } = require('express');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
+const EmailConformationNeeded = require('./errors');
+
 class BackEndManager {
     constructor() {
         let config = JSON.parse(fs.readFileSync("./src/config.json"));
@@ -33,44 +35,44 @@ class BackEndManager {
 
     }
 
-    #readPrivateRsaKey() {
-        return fs.readFileSync('./privateServerKey');
-    }
+    // #readPrivateRsaKey() {
+    //     return fs.readFileSync('./privateServerKey');
+    // }
 
-    generateServerKeys() {
-        let rsaKeys = RsaEncryption.generateRSA();
-        let publicKey = rsaKeys[RsaEncryption.PUBLIC_RSA_KEY_IDENTIFIER];
-        let privateKey = rsaKeys[RsaEncryption.PRIVATE_RSA_KEY_IDENTIFIER];
-        fs.writeFileSync('./publicServerKey', publicKey, err => {
-            if (err) {
-                console.error(err);
-            }
-        });
-        fs.writeFileSync('./privateServerKey', privateKey, err => {
-            if (err) {
-                console.error(err);
-            }
-        });
+    // generateServerKeys() {
+    //     let rsaKeys = RsaEncryption.generateRSA();
+    //     let publicKey = rsaKeys[RsaEncryption.PUBLIC_RSA_KEY_IDENTIFIER];
+    //     let privateKey = rsaKeys[RsaEncryption.PRIVATE_RSA_KEY_IDENTIFIER];
+    //     fs.writeFileSync('./publicServerKey', publicKey, err => {
+    //         if (err) {
+    //             console.error(err);
+    //         }
+    //     });
+    //     fs.writeFileSync('./privateServerKey', privateKey, err => {
+    //         if (err) {
+    //             console.error(err);
+    //         }
+    //     });
 
-    }
+    // }
 
-    getPublicServerKey() {
-        return fs.readFileSync('./publicServerKey');
-    }
+    // getPublicServerKey() {
+    //     return fs.readFileSync('./publicServerKey');
+    // }
 
-    addUser(jsonData, callback) {
+    addUser(uname, email, masterpwd, userIP, callback) {
         // let secretData = jsonData["secretData"];
         // let publicData = jsonData["publicData"];
 
         // let privateRsaKey = this.#readPrivateRsaKey();
         // let decryptedData = RsaEncryption.rsaDecryptJsonObject(privateRsaKey, secretData);
 
-        let decryptedData = jsonData;
+        // let decryptedData = jsonData;
 
-        let userName = decryptedData["uname"];
-        let email = decryptedData["email"];
-        let masterpwd = decryptedData["password"];
-        let userIP = decryptedData["userIP"]
+        // let uname = decryptedData["uname"];
+        // let email = decryptedData["email"];
+        // let masterpwd = decryptedData["password"];
+        // let userIP = decryptedData["userIP"]
 
         let key = AES.generateKey();
         let ivKey = AES.generateIv();
@@ -82,18 +84,21 @@ class BackEndManager {
 
         let encryptedKey = AES.encryptData(key, hashed_masterpwd, ivKey);
         let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, secondSalt);
-        console.log("UNAME addUser() " + userName);
+        console.log("UNAME addUser() " + uname);
 
         try {
-            DataBaseQueries.addUser(this.dbConn, userName, email, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, ivKey, (status) => {
+            DataBaseQueries.addUser(this.dbConn, uname, email, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, ivKey, (status) => {
                 if(status){
-                    DataBaseQueries.addIP(this.dbConn, userName, userIP, (status) => {
+                    DataBaseQueries.addIP(this.dbConn, uname, userIP, (status) => {
                         if(status){
                             callback(true);
                         }else{
                             callback(false);
                         }
                     })
+                }
+                else {
+                    callback(false);
                 }
             });
 
@@ -103,21 +108,25 @@ class BackEndManager {
         }
     }
 
-    addIPtoDB(jsonData, callback){
-        let userIP = jsonData["userIP"];
-        let token = jsonData["token"];
+    addIPtoDB(uname, token, userIP, callback){
+        // let userIP = jsonData["userIP"];
+        // let token = jsonData["token"];
         console.log("token: " + token);
         console.log("ip: " + userIP);
-        DataBaseQueries.getUnameFromEmailToken(this.dbConn, token, (err, uname) => {
-            console.log("uname: " + uname);
+        DataBaseQueries.getUserEmailToken(this.dbConn, uname, (err, tokenDb) => {
+            console.log("tokenDb: " + tokenDb);
             
             if (err) {
-                console.log("error" + err);
+                console.log("error " + err);
                 callback(false);
                 return;
             }
-            if (uname === null)
+            if (tokenDb === null)
             {
+                callback(false);
+                return;
+            }
+            if (token !== tokenDb) {
                 callback(false);
                 return;
             }
@@ -132,11 +141,11 @@ class BackEndManager {
         });
     }
 
-    loginUser(jsonData, callback) {
-        let decryptedData = jsonData;
-        let identification = decryptedData["identification"];
-        let masterpwd = decryptedData["password"];
-        let userIP = decryptedData["userIP"]   
+    loginUser(identification, masterpwd, userIP, callback) {
+        // let decryptedData = jsonData;
+        // let identification = decryptedData["identification"];
+        // let masterpwd = decryptedData["password"];
+        // let userIP = decryptedData["userIP"]   
         DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (uname) => {
             if (uname === null) {
                 callback(null);
@@ -167,6 +176,7 @@ class BackEndManager {
                                 let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?token=' + token + '&ip=' + userIP + '">link</a> to verify the login.</p>'
                                 this.sendMail(email,'New login location detected','' , html, callback);
                             });
+                            callback(new EmailConformationNeeded())
                         });
                     }
                 });
@@ -519,4 +529,4 @@ class BackEndManager {
 
 }
 
-module.exports = BackEndManager;
+module.exports = new BackEndManager();

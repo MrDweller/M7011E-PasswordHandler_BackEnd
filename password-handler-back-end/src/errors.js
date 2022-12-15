@@ -1,7 +1,6 @@
-class InvalidToken {  
-    constructor (message) {
-        this.message = message;
-    }
-  }
+class ServerError{}
+
+module.exports = class EmailConformationNeeded extends ServerError {}
+
+module.exports = class InvalidToken extends ServerError {}
   
-  module.exports = InvalidToken  
