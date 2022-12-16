@@ -732,7 +732,7 @@ class LogoutApiView(APIView):
             except:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             
-            if admin==False:
+            if admin == False:
                 userToken = request.headers.get("user_token")
             else:
                 userToken = request.headers.get("admin_token")
@@ -740,6 +740,9 @@ class LogoutApiView(APIView):
             if userToken != user_object.token:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             
+            user_object.token = None
+            user_object.save()
+
             temp_dict = {}
             temp_dict = request.data.copy()
             temp_dict["error"] = "INVALID_TOKEN"
