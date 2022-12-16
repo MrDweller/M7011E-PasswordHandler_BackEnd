@@ -1,4 +1,5 @@
-const InvalidToken = require('./errors');
+const ServerErrors = require('./errors');
+
 const TokenGenerator = require('./tokenGenerator');
 
 class DataBaseQueries {
@@ -12,7 +13,8 @@ class DataBaseQueries {
                 salt_2.toString('base64'),
                 encrypted_key.toString('base64'),
                 iv.toString('base64'),
-                TokenGenerator.generateToken(20, true),
+                // TokenGenerator.generateToken(20, true),
+                null,
                 null,
                 null,
                 null]
@@ -76,23 +78,37 @@ class DataBaseQueries {
         });
     }
 
-    static getUserToken(dbConn, identification, callback){
-        var sql = `SELECT token FROM users WHERE users.uname = "${identification}" OR users.email = "${identification}"`;
+    static cancelUserToken(dbConn, uname, callback){
+        var sql = `UPDATE users SET token = NULL, token_timestamp=NULL where uname = "${uname}" `
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
-                callback(null);
+                callback(false);
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(true);
+            }
+        });
+    }
+
+    static getUserToken(dbConn, uname, callback){
+        var sql = `SELECT token FROM users WHERE users.uname = "${uname}" AND CURRENT_TIMESTAMP() - token_timestamp < 60`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(new ServerErrors.InvalidToken());
             }
             else {
                 try {
                     console.log("Number affected rows " + result.affectedRows);
                     let token = result[0]["token"];
-                    console.log(token);
+                    console.log("token " +token);
                     callback(token);
 
                 }
                 catch (error) {
-                    callback(null);
+                    callback(new ServerErrors.InternalServerError());
                 }
             }
         });
@@ -114,14 +130,14 @@ class DataBaseQueries {
                         callback(null, uname);
                     }
                     else {
-                        callback(new Error("Not valid token"));
+                        callback(new ServerErrors.InternalServerError());
 
                     }
 
                 }
                 catch (error) {
                     if (error instanceof TypeError) {
-                        callback(new InvalidToken());
+                        callback(new ServerErrors.InvalidToken());
                         return;
                     }
                     callback(error);
@@ -182,14 +198,14 @@ class DataBaseQueries {
                         callback(null, uname);
                     }
                     else {
-                        callback(new Error("Not valid token"));
+                        callback(new ServerErrors.InvalidToken());
 
                     }
 
                 }
                 catch (error) {
                     if (error instanceof TypeError) {
-                        callback(new InvalidToken());
+                        callback(new ServerErrors.InvalidToken());
                         return;
                     }
                     callback(error);
@@ -500,18 +516,18 @@ class DataBaseQueries {
         var sql = `SELECT email FROM users WHERE users.uname = "${uname}"`;
         dbConn.query(sql, (err, result) => {
             if (err) {
-                console.log(err);
-                callback(null);
+                callback(new ServerErrors.InternalServerError());
+                return;
             }
-            else {
-                try {
-                    console.log("Number affected rows " + result.affectedRows);
-                    callback(result[0]["email"]);
+            try {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(result[0]["email"]);
+                return;
 
-                }
-                catch (error) {
-                    callback(null);
-                }
+            }
+            catch (error) {
+                callback(new ServerErrors.InternalServerError());
+                return;
             }
         });
     }

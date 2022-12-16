@@ -3,7 +3,7 @@
 var utils = require('../utils/writer.js');
 const backEndHandler = require('../../backendHandler');
 
-const EmailConformationNeeded = require('../../errors');
+const ServerErrors = require('../../errors');
 
 /**
  * Confirms the given ip of the user with the given token.
@@ -69,7 +69,17 @@ exports.createUser = function (body) {
  **/
 exports.deleteUser = function (uname, userToken) {
   return new Promise(function (resolve, reject) {
-    resolve();
+    backEndHandler.removeUser(uname, userToken, (result) => {
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(400);
+        return;
+      }
+      if (result == false) {
+        reject(404);
+        return;
+      }
+      resolve(200);
+    });
   });
 }
 
@@ -84,16 +94,22 @@ exports.deleteUser = function (uname, userToken) {
  **/
 exports.getUserByName = function (uname, userToken) {
   return new Promise(function (resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-      "uname": "john",
-      "email": "john@email.com"
-    };
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+    backEndHandler.getUserInfo(uname, userToken, (result) => {
+      console.log(result);
+      if (result instanceof ServerErrors.InternalServerError) {
+        reject(500);
+        return;
+      }
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(400);
+        return;
+      }
+      if (result instanceof ServerErrors.NoRowsEffectedInDb) {
+        reject(404);
+        return;
+      }
+      resolve(result);
+    })
   });
 }
 
@@ -114,7 +130,7 @@ exports.loginUser = function (body, uname) {
         reject();
 
       }
-      else if (result instanceof EmailConformationNeeded) {
+      else if (result instanceof ServerErrors.EmailConformationNeeded) {
         reject(403);
       }
       else {
@@ -136,7 +152,17 @@ exports.loginUser = function (body, uname) {
  **/
 exports.logoutUser = function (uname, userToken) {
   return new Promise(function (resolve, reject) {
-    resolve();
+    backEndHandler.cancelUserToken(uname, userToken, (result) => {
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(400);
+        return;
+      }
+      if (result == false) {
+        reject(500);
+        return;
+      }
+      resolve(200);
+    })
   });
 }
 
@@ -152,7 +178,32 @@ exports.logoutUser = function (uname, userToken) {
  **/
 exports.updateUser = function (body, uname, userToken) {
   return new Promise(function (resolve, reject) {
-    resolve();
+    let newUname = body["uname"];
+    let newEmail = body["email"];
+    let password = body["password"];
+    let newPassword = body["newPassword"];
+    backEndHandler.verifyUser(uname, userToken, (result) => {
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(400);
+      }
+      if (newUname) {
+        backEndHandler.changeUname(newUname, userToken, (result) => {
+  
+        });
+      }
+      if (newEmail) {
+        backEndHandler.requestEmailChange(newUname, userToken, (result) => {
+  
+        });
+      }
+      if (newPassword && password) {
+        backEndHandler.changeMasterPassword(userToken, password, newPassword, (result) =>{
+
+        });
+      }
+      resolve(200);
+
+    });
   });
 }
 

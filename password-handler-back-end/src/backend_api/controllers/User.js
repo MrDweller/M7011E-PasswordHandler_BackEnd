@@ -26,10 +26,10 @@ module.exports.createUser = function createUser (req, res, next, body) {
 module.exports.deleteUser = function deleteUser (req, res, next, uname, user_token) {
   User.deleteUser(uname, user_token)
     .then(function (response) {
-      utils.writeJson(res, response);
+      utils.writeHeaders(res, null, response);
     })
     .catch(function (response) {
-      utils.writeJson(res, response);
+      utils.writeHeaders(res, null, response);
     });
 };
 
@@ -39,7 +39,7 @@ module.exports.getUserByName = function getUserByName (req, res, next, uname, us
       utils.writeJson(res, response);
     })
     .catch(function (response) {
-      utils.writeJson(res, response);
+      utils.writeHeaders(res, null, response);
     });
 };
 
@@ -62,19 +62,19 @@ module.exports.loginUser = function loginUser (req, res, next, body, uname) {
 module.exports.logoutUser = function logoutUser (req, res, next, uname, user_token) {
   User.logoutUser(uname, user_token)
     .then(function (response) {
-      utils.writeJson(res, response);
+      utils.writeHeaders(res, null, response);
     })
     .catch(function (response) {
-      utils.writeJson(res, response);
+      utils.writeHeaders(res, null, response);
     });
 };
 
 module.exports.updateUser = function updateUser (req, res, next, body, uname, user_token) {
   User.updateUser(body, uname, user_token)
     .then(function (response) {
-      utils.writeJson(res, response);
+      utils.writeHeaders(res, null, response);
     })
     .catch(function (response) {
-      utils.writeJson(res, response);
+      utils.writeHeaders(res, null, response);
     });
 };

@@ -11,7 +11,8 @@ const { response } = require('express');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
-const EmailConformationNeeded = require('./errors');
+const ServerErrors = require('./errors');
+const { InvalidToken } = require('./errors');
 
 class BackEndManager {
     constructor() {
@@ -141,6 +142,77 @@ class BackEndManager {
         });
     }
 
+    removeUser(uname, token, callback) {
+        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) =>{
+            if (tokenDb == null) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            if (tokenDb !== token) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            DataBaseQueries.removeUser(this.dbConn, uname, (result) => {
+                callback(result);
+            });
+        })
+    }
+
+    getUserInfo(uname, token, callback) {
+        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
+            console.log(tokenDb !== token);
+            if (tokenDb == null) {
+                console.log("test");
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            if (tokenDb !== token) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+
+            DataBaseQueries.getEmailFromUname(this.dbConn, uname, (result) => {
+                if (result instanceof ServerErrors.ServerError) {
+                    callback(result);
+                    return;
+                }
+                if (result == null) {
+                    callback(new ServerErrors.NoRowsEffectedInDb());
+                    return;
+                }
+                let userInfo = {
+                    "uname": uname,
+                    "email": result
+                };
+                callback(userInfo);
+            });
+
+        });
+    }
+
+    verifyUser(uname, token, callback) {
+        DataBaseQueries.getUserToken(this.dbConn, uname, (result) => {
+            console.log(result instanceof ServerErrors.InternalServerError);
+            if (result == null) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            if (result !== token) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            if (result instanceof ServerErrors.InvalidToken) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            if (result instanceof ServerErrors.InternalServerError) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            callback(true);
+        });
+    }
+
     loginUser(identification, masterpwd, userIP, callback) {
         // let decryptedData = jsonData;
         // let identification = decryptedData["identification"];
@@ -176,7 +248,7 @@ class BackEndManager {
                                 let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?token=' + token + '&ip=' + userIP + '">link</a> to verify the login.</p>'
                                 this.sendMail(email,'New login location detected','' , html, callback);
                             });
-                            callback(new EmailConformationNeeded())
+                            callback(new ServerErrors.EmailConformationNeeded())
                         });
                     }
                 });
@@ -187,6 +259,23 @@ class BackEndManager {
             });
         });
 
+    }
+
+    cancelUserToken(uname, token, callback) {
+        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
+            console.log(tokenDb !== token);
+            if (tokenDb == null) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            if (tokenDb !== token) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            DataBaseQueries.cancelUserToken(this.dbConn, uname, (result) => {
+                callback(result);
+            });
+        });
     }
 
     #addNewToken(uname, callback){
@@ -263,11 +352,11 @@ class BackEndManager {
         });
     }
 
-    changeMasterPassword(jsonData, callback) {
-        let decryptedData = jsonData;
-        let token = decryptedData["token"];
-        let masterpwd = decryptedData["password"];
-        let new_masterpwd = decryptedData["newPassword"];
+    changeMasterPassword(token, masterpwd, new_masterpwd, callback) {
+        // let decryptedData = jsonData;
+        // let token = decryptedData["token"];
+        // let masterpwd = decryptedData["password"];
+        // let new_masterpwd = decryptedData["newPassword"];
 
         DataBaseQueries.getUnameFromToken(this.dbConn, token, (error, uname) => {
             console.log(uname + ": " + masterpwd);
@@ -314,10 +403,10 @@ class BackEndManager {
 
     }
 
-    changeUname(jsonData, callback) {
-        let decryptedData = jsonData;
-        let token = decryptedData["token"];
-        let new_uname = decryptedData["new_uname"];
+    changeUname(new_uname, token, callback) {
+        // let decryptedData = jsonData;
+        // let token = decryptedData["token"];
+        // let new_uname = decryptedData["new_uname"];
 
         DataBaseQueries.getUnameFromToken(this.dbConn, token, (err, uname) => {
             if (err) {
@@ -335,10 +424,10 @@ class BackEndManager {
         });
     }
 
-    requestEmailChange(jsonData, callback) {
-        let decryptedData = jsonData;
-        let token = decryptedData["token"];
-        let new_email = decryptedData["new_email"];
+    requestEmailChange(token, new_email, callback) {
+        // let decryptedData = jsonData;
+        // let token = decryptedData["token"];
+        // let new_email = decryptedData["new_email"];
         DataBaseQueries.getUnameFromToken(this.dbConn, token, (err, uname) => {
             if (err) {
                 console.log("error" + err);

@@ -1,6 +1,18 @@
 class ServerError{}
 
-module.exports = class EmailConformationNeeded extends ServerError {}
+class EmailConformationNeeded extends ServerError {}
 
-module.exports = class InvalidToken extends ServerError {}
+class InvalidToken extends ServerError {}
   
+class NoRowsEffectedInDb extends ServerError {}
+
+class InternalServerError extends ServerError {}
+
+module.exports = {
+    ServerError: ServerError,
+
+    EmailConformationNeeded: EmailConformationNeeded,
+    InvalidToken: InvalidToken,
+    NoRowsEffectedInDb: NoRowsEffectedInDb,
+    InternalServerError: InternalServerError
+}
