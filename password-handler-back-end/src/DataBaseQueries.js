@@ -65,7 +65,7 @@ class DataBaseQueries {
     }
 
     static changeUserToken(dbConn, uname, token, callback){
-        var sql = `UPDATE users SET token = "${token}", token_timestamp=NULL where uname = "${uname}" `
+        var sql = `UPDATE users SET token = "${token}", token_timestamp=CURRENT_TIMESTAMP() where uname = "${uname}" `
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
@@ -79,7 +79,7 @@ class DataBaseQueries {
     }
 
     static cancelUserToken(dbConn, uname, callback){
-        var sql = `UPDATE users SET token = NULL, token_timestamp=NULL where uname = "${uname}" `
+        var sql = `UPDATE users SET token = NULL, token_timestamp=CURRENT_TIMESTAMP() where uname = "${uname}" `
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
@@ -147,7 +147,7 @@ class DataBaseQueries {
     }
 
     static changeUserEmailToken(dbConn, uname, token, callback){
-        var sql = `UPDATE users SET email_token = "${token}", email_token_timestamp=NULL where uname = "${uname}"`
+        var sql = `UPDATE users SET email_token = "${token}", email_token_timestamp=CURRENT_TIMESTAMP() where uname = "${uname}"`
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);

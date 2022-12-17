@@ -25,6 +25,7 @@ class BackEndManager {
         });
         this.dbConn.connect((err) => {
             if (err) {
+                console.log(err);
                 console.log("Can't connect to the database!");
                 process.exit(1);
             }
