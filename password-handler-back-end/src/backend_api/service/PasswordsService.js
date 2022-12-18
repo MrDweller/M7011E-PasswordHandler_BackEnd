@@ -1,5 +1,9 @@
 'use strict';
 
+const backEndHandler = require('../../backendHandler');
+
+const ServerErrors = require('../../errors');
+
 
 /**
  * Read all passwords
@@ -9,21 +13,19 @@
  * userToken Token 
  * returns List
  **/
-exports.readPasswords = function(uname,userToken) {
-  return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = [ {
-  "website_url" : "google.com",
-  "website_uname" : "john"
-}, {
-  "website_url" : "google.com",
-  "website_uname" : "john"
-} ];
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+exports.readPasswords = function (uname, userToken) {
+  return new Promise(function (resolve, reject) {
+    backEndHandler.getAllPasswords(uname, userToken, (result) => {
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(400);
+        return;
+      }
+      if (result instanceof ServerErrors.InternalServerError) {
+        reject(500);
+        return;
+      }
+      resolve(result);
+    });
   });
 }
 

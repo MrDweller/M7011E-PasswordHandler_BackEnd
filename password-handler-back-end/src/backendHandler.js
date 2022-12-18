@@ -305,31 +305,26 @@ class BackEndManager {
         })
     }
 
-    getAllPasswords(jsonData, callback) {
-        let decryptedData = jsonData;
-        let token = decryptedData["token"];
-        console.log("token " + token);
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (err, uname) => {
+    getAllPasswords(uname, token, callback) {
+        // let decryptedData = jsonData;
+        // let token = decryptedData["token"];
+        // console.log("token " + token);
+        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
+            console.log(tokenDb !== token);
+            if (tokenDb == null) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            if (tokenDb !== token) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
 
-            if (err) {
-                console.log("error" + err);
-                callback(err);
-                return;
-            }
-            if (uname === null) {
-                callback(null);
-                return;
-            }
             DataBaseQueries.getAllWebsitePasswords(this.dbConn, uname, (result) => {
-                if (result === null) {
-                    callback(null);
-                    return;
-                }
-                console.log(result);
                 callback(result);
             });
-
         });
+       
 
     }
 
@@ -461,23 +456,20 @@ class BackEndManager {
         });
     }
 
-    readPassword(jsonData, callback) {
-        let decryptedData = jsonData;
-        let token = decryptedData["token"];
-        let masterpwd = decryptedData["password"];
-        let website_url = decryptedData["website_url"];
-        let website_uname = decryptedData["website_uname"];
-
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (error, uname) => {
-            console.log(uname + ": " + masterpwd);
-            if (error) {
-                console.log("error" + error);
-                callback(error);
+    readPassword(masterpwd, website_url, website_uname, uname, token, callback) {
+        // let decryptedData = jsonData;
+        // let token = decryptedData["token"];
+        // let masterpwd = decryptedData["password"];
+        // let website_url = decryptedData["website_url"];
+        // let website_uname = decryptedData["website_uname"];
+        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
+            console.log(tokenDb !== token);
+            if (tokenDb == null) {
+                callback(new ServerErrors.InvalidToken());
                 return;
             }
-
-            if (uname === null) {
-                callback(null);
+            if (tokenDb !== token) {
+                callback(new ServerErrors.InvalidToken());
                 return;
             }
             this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
@@ -499,28 +491,27 @@ class BackEndManager {
 
     }
 
-    addPassword(jsonData, callback) {
-        let decryptedData = jsonData;
-        let token = decryptedData["token"];
-        let masterpwd = decryptedData["password"];
-        let website_url = decryptedData["website_url"];
-        let website_uname = decryptedData["website_uname"];
+    addPassword(masterpwd, website_url, website_uname, uname, token, callback) {
+        // let decryptedData = jsonData;
+        // let token = decryptedData["token"];
+        // let masterpwd = decryptedData["password"];
+        // let website_url = decryptedData["website_url"];
+        // let website_uname = decryptedData["website_uname"];
 
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (error, uname) => {
-            if (error) {
-                console.log("error" + error);
-                callback(error);
+        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
+            console.log(tokenDb !== token);
+            if (tokenDb == null) {
+                callback(new ServerErrors.InvalidToken());
                 return;
             }
-
-            if (uname === null) {
-                callback(null);
+            if (tokenDb !== token) {
+                callback(new ServerErrors.InvalidToken());
                 return;
             }
 
             this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
                 if (result !== true) {
-                    callback(false);
+                    callback(new ServerErrors.WrongMasterPassword());
                     return;
                 }
                 let iv = AES.generateIv();

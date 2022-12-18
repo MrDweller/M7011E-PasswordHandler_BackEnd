@@ -9,6 +9,6 @@ module.exports.readPasswords = function readPasswords (req, res, next, uname, us
       utils.writeJson(res, response);
     })
     .catch(function (response) {
-      utils.writeJson(res, response);
+      utils.writeHeaders(res, null, response);
     });
 };

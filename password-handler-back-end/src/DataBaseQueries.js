@@ -15,9 +15,9 @@ class DataBaseQueries {
                 iv.toString('base64'),
                 // TokenGenerator.generateToken(20, true),
                 null,
+                new Date(),
                 null,
-                null,
-                null]
+                new Date()]
         ];
         dbConn.query(sql, [values], (err, result) => {
             if (err) {
@@ -276,7 +276,7 @@ class DataBaseQueries {
         dbConn.query(sql, [values], (err, result) => {
             if (err) {
                 console.log(err);
-                callback(false);
+                callback(ServerErrors.InternalServerError());
             }
             else {
                 console.log("Number affected rows " + result.affectedRows);
@@ -581,7 +581,7 @@ class DataBaseQueries {
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
-                callback(null);
+                callback(new ServerErrors.InternalServerError());
             }
             else {
                 try {
@@ -590,7 +590,7 @@ class DataBaseQueries {
 
                 }
                 catch (error) {
-                    callback(null);
+                    callback(new ServerErrors.InternalServerError());
                 }
             }
         });

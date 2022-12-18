@@ -1,5 +1,8 @@
 'use strict';
 
+const backEndHandler = require('../../backendHandler');
+
+const ServerErrors = require('../../errors');
 
 /**
  * Create password
@@ -10,9 +13,26 @@
  * userToken Token 
  * no response value expected for this operation
  **/
-exports.createPassword = function(body,uname,userToken) {
-  return new Promise(function(resolve, reject) {
-    resolve();
+exports.createPassword = function (body, uname, userToken) {
+  return new Promise(function (resolve, reject) {
+    let masterpwd = body["password"];
+    let website_url = body["website_url"];
+    let website_uname = body["website_uname"];
+    backEndHandler.addPassword(masterpwd, website_url, website_uname, uname, userToken, (result) => {
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(400);
+        return;
+      }
+      if (result instanceof ServerErrors.WrongMasterPassword) {
+        reject(400);
+        return;
+      }
+      if (result instanceof ServerErrors.InternalServerError) {
+        reject(500);
+        return;
+      }
+      resolve(201);
+    });
   });
 }
 
@@ -26,23 +46,31 @@ exports.createPassword = function(body,uname,userToken) {
  * userToken Token 
  * returns List
  **/
-exports.decryptPassword = function(body,uname,userToken) {
-  return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = [ {
-  "website_url" : "google.com",
-  "website_uname" : "john",
-  "website_password" : "12345"
-}, {
-  "website_url" : "google.com",
-  "website_uname" : "john",
-  "website_password" : "12345"
-} ];
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+exports.decryptPassword = function (body, uname, userToken) {
+  return new Promise(function (resolve, reject) {
+    let masterpwd = body["password"];
+    let website_url = body["website_url"];
+    let website_uname = body["website_uname"];
+    backEndHandler.readPassword(masterpwd, website_url, website_uname, uname, userToken, (result) => {
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(400);
+        return;
+      }
+      if (result instanceof ServerErrors.WrongMasterPassword) {
+        reject(400);
+        return;
+      }
+      if (result instanceof ServerErrors.InternalServerError) {
+        reject(500);
+        return;
+      }
+      let response = {
+        "website_url": website_url,
+        "website_uname": website_uname,
+        "website_password": result
+      }
+      resolve(response);
+    });
   });
 }
 

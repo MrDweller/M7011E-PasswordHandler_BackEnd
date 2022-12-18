@@ -1,6 +1,5 @@
 'use strict';
 
-var utils = require('../utils/writer.js');
 const backEndHandler = require('../../backendHandler');
 
 const ServerErrors = require('../../errors');
@@ -134,7 +133,7 @@ exports.loginUser = function (body, uname) {
         reject(403);
       }
       else {
-        let userToken = {"userToken": result};
+        let userToken = {"user_token": result};
         resolve(userToken);
       }
     });

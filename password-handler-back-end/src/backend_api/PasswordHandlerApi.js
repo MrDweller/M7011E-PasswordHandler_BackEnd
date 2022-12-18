@@ -5,7 +5,6 @@ const http = require('http');
 const oas3Tools = require('oas3-tools');
 
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const BackEndHandler = require('../backendHandler')
 const InvalidToken = require('../errors');
 
@@ -14,16 +13,12 @@ class PasswordHandlerApi {
         this.host = host;
         this.port = port;
 
-        // this.expressApi = express();
-        // this.expressApi.use(bodyParser.json());
-
-
         var corsOptions = {
-            origin: 'http://localhost:3000',
+            origin: '*',
+            exposedHeaders:  '*',
             optionsSuccessStatus: 200 // For legacy browser support
         }
 
-        // this.expressApi.use(cors(corsOptions));
 
         // swaggerRouter configuration
         var options = {
@@ -32,23 +27,21 @@ class PasswordHandlerApi {
             },
         };
 
-        var expressAppConfig = oas3Tools.expressAppConfig('openapi.yaml', options);
-        this.app = expressAppConfig.getApp();
-        this.app.use(bodyParser.json());
-        this.app.use(cors(corsOptions));
+        let expressAppConfig = oas3Tools.expressAppConfig('./openapi.yaml', options);
+        let openApiApp = expressAppConfig.getApp();
+        this.app = express();
+
+        // Add headers
+        this.app.use(/.*/, cors(corsOptions));
+        for (let i = 2; i < openApiApp._router.stack.length; i++) {
+            this.app._router.stack.push(openApiApp._router.stack[i])
+        }
 
     }
 
     start() {
         let host = this.host;
         let port = this.port;
-
-
-        // this.server = this.expressApi.listen(this.port, this.host, function () {
-        //     console.log("PasswordHandlerApi started at: " + host + ":" + port);
-        // });
-
-        // this.#listenForApiRequests();
 
         // Initialize the Swagger middleware
         http.createServer(this.app).listen(this.port, this.host, function () {
