@@ -186,17 +186,17 @@ exports.updateUser = function (body, uname, userToken) {
         reject(400);
       }
       if (newUname) {
-        backEndHandler.changeUname(newUname, userToken, (result) => {
+        backEndHandler.changeUname(uname, newUname, userToken, (result) => {
   
         });
       }
       if (newEmail) {
-        backEndHandler.requestEmailChange(newUname, userToken, (result) => {
+        backEndHandler.requestEmailChange(uname, newEmail, userToken, (result) => {
   
         });
       }
       if (newPassword && password) {
-        backEndHandler.changeMasterPassword(userToken, password, newPassword, (result) =>{
+        backEndHandler.changeMasterPassword(uname, userToken, password, newPassword, (result) =>{
 
         });
       }
@@ -206,3 +206,23 @@ exports.updateUser = function (body, uname, userToken) {
   });
 }
 
+exports.getUname = function(identification) {
+  return new Promise(function (resolve, reject) {
+    console.log(identification);
+    backEndHandler.readUserName(identification, (result) => {
+      if (result instanceof ServerErrors.InternalServerError) {
+        reject(500);
+        return;
+      }
+      if (result instanceof ServerErrors.NotFound) {
+        reject(404);
+        return;
+      }
+      let response = {
+        "uname": result
+      }
+      resolve(response);
+    });
+
+  });
+}

@@ -33,6 +33,17 @@ module.exports.deleteUser = function deleteUser (req, res, next, uname, user_tok
     });
 };
 
+module.exports.getUname = function getUname(req, res, next, identification) {
+  User.getUname(identification)
+    .then(function (response) {
+      utils.writeJson(res, response);
+    })
+    .catch(function (response) {
+      utils.writeHeaders(res, null, response);
+    });
+
+}
+
 module.exports.getUserByName = function getUserByName (req, res, next, uname, user_token) {
   User.getUserByName(uname, user_token)
     .then(function (response) {

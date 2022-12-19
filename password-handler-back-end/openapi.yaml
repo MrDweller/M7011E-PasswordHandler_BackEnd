@@ -126,6 +126,36 @@ paths:
         "400":
           description: Invalid username or token supplied
       x-swagger-router-controller: User
+  /user/{identification}/uname:
+    get:
+      tags:
+      - user
+      summary: Get username
+      description: "This gives the username of a user based on identification"
+      operationId: getUname
+      parameters:
+      - name: identification
+        in: path
+        description: Identification
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Identification'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uname:
+                    type: string
+                    example: 'john'
+        "404":
+          description: Uname not found
+      x-swagger-router-controller: User
   /user/{uname}:
     get:
       tags:
@@ -612,6 +642,11 @@ components:
       example:
         uname: john
         email: john@email.com
+
+    Identification:
+      type: string
+      example: john@email.com
+
     Token:
       type: string
       example: Xey27tst7

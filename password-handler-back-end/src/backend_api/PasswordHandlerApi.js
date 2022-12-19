@@ -15,8 +15,9 @@ class PasswordHandlerApi {
 
         var corsOptions = {
             origin: '*',
+            methods: ['GET', 'POST', 'PUT', 'DELETE'],
             exposedHeaders:  '*',
-            optionsSuccessStatus: 200 // For legacy browser support
+            optionsSuccessStatus: 204 // For legacy browser support
         }
 
 
@@ -32,7 +33,7 @@ class PasswordHandlerApi {
         this.app = express();
 
         // Add headers
-        this.app.use(/.*/, cors(corsOptions));
+        this.app.use(cors(corsOptions));
         for (let i = 2; i < openApiApp._router.stack.length; i++) {
             this.app._router.stack.push(openApiApp._router.stack[i])
         }

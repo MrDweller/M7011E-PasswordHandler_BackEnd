@@ -246,7 +246,7 @@ class BackEndManager {
                                     callback(null);
                                     return;
                                 }
-                                let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?token=' + token + '&ip=' + userIP + '">link</a> to verify the login.</p>'
+                                let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?uname='+ uname + '&token=' + token + '&ip=' + userIP + '">link</a> to verify the login.</p>'
                                 this.sendMail(email,'New login location detected','' , html, callback);
                             });
                             callback(new ServerErrors.EmailConformationNeeded())
@@ -328,44 +328,29 @@ class BackEndManager {
 
     }
 
-    readUserName(jsonData, callback) {
-        let decryptedData = jsonData;
-        let token = decryptedData["token"];
-
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (error, uname) => {
-            if (error) {
-                console.log("error " + error);
-                callback(error);
-                return;
-            }
-
-            if (uname === null) {
-                callback(null);
-                return;
-            }
-
-            callback(uname);
+    readUserName(identification, callback) {
+        DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (result) => {
+            callback(result);
         });
     }
 
-    changeMasterPassword(token, masterpwd, new_masterpwd, callback) {
+    changeMasterPassword(uname, token, masterpwd, new_masterpwd, callback) {
         // let decryptedData = jsonData;
         // let token = decryptedData["token"];
         // let masterpwd = decryptedData["password"];
         // let new_masterpwd = decryptedData["newPassword"];
 
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (error, uname) => {
-            console.log(uname + ": " + masterpwd);
-            if (error) {
-                console.log("error" + error);
-                callback(error);
+        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
+            console.log(tokenDb !== token);
+            if (tokenDb == null) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            if (tokenDb !== token) {
+                callback(new ServerErrors.InvalidToken());
                 return;
             }
 
-            if (uname === null) {
-                callback(null);
-                return;
-            }
             this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
                 if (result !== true) {
                     callback(null);
@@ -399,41 +384,43 @@ class BackEndManager {
 
     }
 
-    changeUname(new_uname, token, callback) {
+    changeUname(uname, new_uname, token, callback) {
         // let decryptedData = jsonData;
         // let token = decryptedData["token"];
         // let new_uname = decryptedData["new_uname"];
 
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (err, uname) => {
-            if (err) {
-                console.log("error" + err);
-                callback(err);
+        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
+            console.log(tokenDb !== token);
+            if (tokenDb == null) {
+                callback(new ServerErrors.InvalidToken());
                 return;
             }
-            if (uname === null) {
-                callback(null);
+            if (tokenDb !== token) {
+                callback(new ServerErrors.InvalidToken());
                 return;
             }
+
             DataBaseQueries.changeUname(this.dbConn, uname, new_uname, (result) => {
                 callback(result);
             })
         });
     }
 
-    requestEmailChange(token, new_email, callback) {
+    requestEmailChange(uname, token, new_email, callback) {
         // let decryptedData = jsonData;
         // let token = decryptedData["token"];
         // let new_email = decryptedData["new_email"];
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (err, uname) => {
-            if (err) {
-                console.log("error" + err);
-                callback(err);
+        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
+            console.log(tokenDb !== token);
+            if (tokenDb == null) {
+                callback(new ServerErrors.InvalidToken());
                 return;
             }
-            if (uname === null) {
-                callback(null);
+            if (tokenDb !== token) {
+                callback(new ServerErrors.InvalidToken());
                 return;
             }
+
             this.#verifyEmail(uname, new_email, (err) => {
                 if(err) {
                     callback(false);
@@ -445,13 +432,11 @@ class BackEndManager {
             });
 
         })
-        // TODO: Generate a token and send an email conformation request
-        //this.sendMail(new_email, )
     }
 
     #verifyEmail(uname, email, callback) {
         this.#addNewEmailToken(uname, (email_token) => {
-            let html = '<p>You must confirm your email, kindly use this <a href="http://localhost:3000/verifyEmail?email_token=' + email_token + '">link</a> to verify the your email.</p>'
+            let html = '<p>You must confirm your email, kindly use this <a href="http://localhost:3000/verifyEmail?uname=' + uname + '&email_token=' + email_token + '&email=' + email + '">link</a> to verify the your email.</p>'
             this.sendMail(email, 'New email detected', '', html, callback);
         });
     }

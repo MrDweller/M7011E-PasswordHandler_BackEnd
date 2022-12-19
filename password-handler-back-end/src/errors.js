@@ -4,6 +4,8 @@ class EmailConformationNeeded extends ServerError {}
 
 class InvalidToken extends ServerError {}
 
+class NotFound extends ServerError {}
+
 class WrongMasterPassword extends ServerError {}
   
 class NoRowsEffectedInDb extends ServerError {}
@@ -15,6 +17,7 @@ module.exports = {
 
     EmailConformationNeeded: EmailConformationNeeded,
     InvalidToken: InvalidToken,
+    NotFound: NotFound,
     WrongMasterPassword: WrongMasterPassword,
     NoRowsEffectedInDb: NoRowsEffectedInDb,
     InternalServerError: InternalServerError

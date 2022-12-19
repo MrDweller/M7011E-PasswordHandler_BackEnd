@@ -93,7 +93,7 @@ class DataBaseQueries {
     }
 
     static getUserToken(dbConn, uname, callback){
-        var sql = `SELECT token FROM users WHERE users.uname = "${uname}" AND CURRENT_TIMESTAMP() - token_timestamp < 60`;
+        var sql = `SELECT token FROM users WHERE users.uname = "${uname}" AND CURRENT_TIMESTAMP() - token_timestamp < 3600`;
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
@@ -114,37 +114,37 @@ class DataBaseQueries {
         });
     }
 
-    static getUnameFromToken(dbConn, token, callback){
-        var sql = `SELECT uname FROM users WHERE users.token = "${token}" AND CURRENT_TIMESTAMP() - token_timestamp < 60`;
-        dbConn.query(sql, (err, result) => {
-            if (err) {
-                console.log(err);
-                callback(err);
-            } 
-            else {
-                try {
-                    console.log("Number affected rows " + result.affectedRows);
-                    let uname = result[0]["uname"];
-                    console.log("uname " + uname);
-                    if (uname) {
-                        callback(null, uname);
-                    }
-                    else {
-                        callback(new ServerErrors.InternalServerError());
+    // static getUnameFromToken(dbConn, token, callback){
+    //     var sql = `SELECT uname FROM users WHERE users.token = "${token}" AND CURRENT_TIMESTAMP() - token_timestamp < 60`;
+    //     dbConn.query(sql, (err, result) => {
+    //         if (err) {
+    //             console.log(err);
+    //             callback(err);
+    //         } 
+    //         else {
+    //             try {
+    //                 console.log("Number affected rows " + result.affectedRows);
+    //                 let uname = result[0]["uname"];
+    //                 console.log("uname " + uname);
+    //                 if (uname) {
+    //                     callback(null, uname);
+    //                 }
+    //                 else {
+    //                     callback(new ServerErrors.InternalServerError());
 
-                    }
+    //                 }
 
-                }
-                catch (error) {
-                    if (error instanceof TypeError) {
-                        callback(new ServerErrors.InvalidToken());
-                        return;
-                    }
-                    callback(error);
-                }
-            }
-        });
-    }
+    //             }
+    //             catch (error) {
+    //                 if (error instanceof TypeError) {
+    //                     callback(new ServerErrors.InvalidToken());
+    //                     return;
+    //                 }
+    //                 callback(error);
+    //             }
+    //         }
+    //     });
+    // }
 
     static changeUserEmailToken(dbConn, uname, token, callback){
         var sql = `UPDATE users SET email_token = "${token}", email_token_timestamp=CURRENT_TIMESTAMP() where uname = "${uname}"`
@@ -537,10 +537,14 @@ class DataBaseQueries {
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
-                callback(null);
+                callback(new ServerErrors.InternalServerError());
             }
             else {
                 try {
+                    if (result.length <= 0){
+                        callback(new ServerErrors.NotFound());
+                        return;
+                    }
                     console.log("Number affected rows " + result.affectedRows);
                     let uname = result[0]["uname"];
                     console.log(uname);
@@ -548,7 +552,7 @@ class DataBaseQueries {
 
                 }
                 catch (error) {
-                    callback(null);
+                    callback(new ServerErrors.InternalServerError());
                 }
             }
         });
