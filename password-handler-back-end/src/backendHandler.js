@@ -89,19 +89,20 @@ class BackEndManager {
         console.log("UNAME addUser() " + uname);
 
         try {
-            DataBaseQueries.addUser(this.dbConn, uname, email, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, ivKey, (status) => {
-                if(status){
-                    DataBaseQueries.addIP(this.dbConn, uname, userIP, (status) => {
-                        if(status){
-                            callback(true);
-                        }else{
-                            callback(false);
-                        }
-                    })
+            DataBaseQueries.addUser(this.dbConn, uname, email, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, ivKey, (result) => {
+                if (result instanceof ServerErrors.ServerError)
+                {
+                    callback(result);
+                    return;
                 }
-                else {
-                    callback(false);
-                }
+                DataBaseQueries.addIP(this.dbConn, uname, userIP, (result) => {
+                    if (result instanceof ServerErrors.ServerError)
+                    {
+                        callback(result);
+                        return;
+                    }
+                    callback(true);
+                });
             });
 
         }
@@ -110,31 +111,24 @@ class BackEndManager {
         }
     }
 
-    addIPtoDB(uname, token, userIP, callback){
+    addIPtoDB(uname, emailToken, userIP, callback){
         // let userIP = jsonData["userIP"];
         // let token = jsonData["token"];
-        console.log("token: " + token);
+        console.log("token: " + emailToken);
         console.log("ip: " + userIP);
-        DataBaseQueries.getUserEmailToken(this.dbConn, uname, (err, tokenDb) => {
-            console.log("tokenDb: " + tokenDb);
+        this.verifyEmailToken(uname, emailToken, (result) => {
+            console.log("tokenDb: " + result);
             
-            if (err) {
-                console.log("error " + err);
-                callback(false);
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
                 return;
             }
-            if (tokenDb === null)
-            {
-                callback(false);
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
-            if (token !== tokenDb) {
-                callback(false);
-                return;
-            }
-
             DataBaseQueries.addIP(this.dbConn, uname, userIP, (result) => {
-                if(result){
+                if(result === true){
                     callback(true)
                 }else{
                     callback(false)
@@ -144,34 +138,34 @@ class BackEndManager {
     }
 
     removeUser(uname, token, callback) {
-        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) =>{
-            if (tokenDb == null) {
-                callback(new ServerErrors.InvalidToken());
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
                 return;
             }
-            if (tokenDb !== token) {
-                callback(new ServerErrors.InvalidToken());
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
+            
             DataBaseQueries.removeUser(this.dbConn, uname, (result) => {
                 callback(result);
             });
-        })
+            
+        });
     }
 
     getUserInfo(uname, token, callback) {
-        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
-            console.log(tokenDb !== token);
-            if (tokenDb == null) {
-                console.log("test");
-                callback(new ServerErrors.InvalidToken());
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
                 return;
             }
-            if (tokenDb !== token) {
-                callback(new ServerErrors.InvalidToken());
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
-
+            
             DataBaseQueries.getEmailFromUname(this.dbConn, uname, (result) => {
                 if (result instanceof ServerErrors.ServerError) {
                     callback(result);
@@ -193,7 +187,11 @@ class BackEndManager {
 
     verifyUser(uname, token, callback) {
         DataBaseQueries.getUserToken(this.dbConn, uname, (result) => {
-            console.log(result instanceof ServerErrors.InternalServerError);
+            console.log(result);
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
             if (result == null) {
                 callback(new ServerErrors.InvalidToken());
                 return;
@@ -202,11 +200,21 @@ class BackEndManager {
                 callback(new ServerErrors.InvalidToken());
                 return;
             }
-            if (result instanceof ServerErrors.InvalidToken) {
+            callback(true);
+        });
+    }
+
+    verifyEmailToken(uname, emailToken, callback) {
+        DataBaseQueries.getUserEmailToken(this.dbConn, uname, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+            if (result == null) {
                 callback(new ServerErrors.InvalidToken());
                 return;
             }
-            if (result instanceof ServerErrors.InternalServerError) {
+            if (result !== emailToken) {
                 callback(new ServerErrors.InvalidToken());
                 return;
             }
@@ -219,22 +227,23 @@ class BackEndManager {
         // let identification = decryptedData["identification"];
         // let masterpwd = decryptedData["password"];
         // let userIP = decryptedData["userIP"]   
-        DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (uname) => {
-            if (uname === null) {
-                callback(null);
+        DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
                 return;
             }
 
+            let uname = result;
             this.#authenticateUser(uname, masterpwd, (result) => {
                 if (result !== true) {
-                    callback(null);
+                    callback(new ServerErrors.InvalidLogin());
                     return;
                 }
                 DataBaseQueries.checkIPofUser(this.dbConn, uname, userIP, (result) => {
                     if (result) {
                         this.#addNewToken(uname, (token) => {
                             if (token === null) {
-                                callback(null);
+                                callback(new ServerErrors.InternalServerError());
                                 return;
                             }
                             callback(token);
@@ -243,7 +252,7 @@ class BackEndManager {
                         DataBaseQueries.getEmailFromUname(this.dbConn, uname, (email) => {
                             this.#addNewEmailToken(uname, (token) => {
                                 if (token === null) {
-                                    callback(null);
+                                    callback(new ServerErrors.InternalServerError());
                                     return;
                                 }
                                 let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?uname='+ uname + '&token=' + token + '&ip=' + userIP + '">link</a> to verify the login.</p>'
@@ -263,16 +272,17 @@ class BackEndManager {
     }
 
     cancelUserToken(uname, token, callback) {
-        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
-            console.log(tokenDb !== token);
-            if (tokenDb == null) {
-                callback(new ServerErrors.InvalidToken());
+        this.verifyUser(uname, token, (result) => {
+            console.log(result);
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
                 return;
             }
-            if (tokenDb !== token) {
-                callback(new ServerErrors.InvalidToken());
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
+            
             DataBaseQueries.cancelUserToken(this.dbConn, uname, (result) => {
                 callback(result);
             });
@@ -309,14 +319,13 @@ class BackEndManager {
         // let decryptedData = jsonData;
         // let token = decryptedData["token"];
         // console.log("token " + token);
-        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
-            console.log(tokenDb !== token);
-            if (tokenDb == null) {
-                callback(new ServerErrors.InvalidToken());
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
                 return;
             }
-            if (tokenDb !== token) {
-                callback(new ServerErrors.InvalidToken());
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
 
@@ -340,14 +349,13 @@ class BackEndManager {
         // let masterpwd = decryptedData["password"];
         // let new_masterpwd = decryptedData["newPassword"];
 
-        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
-            console.log(tokenDb !== token);
-            if (tokenDb == null) {
-                callback(new ServerErrors.InvalidToken());
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
                 return;
             }
-            if (tokenDb !== token) {
-                callback(new ServerErrors.InvalidToken());
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
 
@@ -389,17 +397,16 @@ class BackEndManager {
         // let token = decryptedData["token"];
         // let new_uname = decryptedData["new_uname"];
 
-        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
-            console.log(tokenDb !== token);
-            if (tokenDb == null) {
-                callback(new ServerErrors.InvalidToken());
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
                 return;
             }
-            if (tokenDb !== token) {
-                callback(new ServerErrors.InvalidToken());
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
-
+            
             DataBaseQueries.changeUname(this.dbConn, uname, new_uname, (result) => {
                 callback(result);
             })
@@ -410,17 +417,16 @@ class BackEndManager {
         // let decryptedData = jsonData;
         // let token = decryptedData["token"];
         // let new_email = decryptedData["new_email"];
-        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
-            console.log(tokenDb !== token);
-            if (tokenDb == null) {
-                callback(new ServerErrors.InvalidToken());
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
                 return;
             }
-            if (tokenDb !== token) {
-                callback(new ServerErrors.InvalidToken());
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
-
+            
             this.#verifyEmail(uname, new_email, (err) => {
                 if(err) {
                     callback(false);
@@ -447,16 +453,16 @@ class BackEndManager {
         // let masterpwd = decryptedData["password"];
         // let website_url = decryptedData["website_url"];
         // let website_uname = decryptedData["website_uname"];
-        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
-            console.log(tokenDb !== token);
-            if (tokenDb == null) {
-                callback(new ServerErrors.InvalidToken());
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
                 return;
             }
-            if (tokenDb !== token) {
-                callback(new ServerErrors.InvalidToken());
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
+            
             this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
                 if (result !== true) {
                     callback(null);
@@ -483,17 +489,16 @@ class BackEndManager {
         // let website_url = decryptedData["website_url"];
         // let website_uname = decryptedData["website_uname"];
 
-        DataBaseQueries.getUserToken(this.dbConn, uname, (tokenDb) => {
-            console.log(tokenDb !== token);
-            if (tokenDb == null) {
-                callback(new ServerErrors.InvalidToken());
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
                 return;
             }
-            if (tokenDb !== token) {
-                callback(new ServerErrors.InvalidToken());
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
-
+            
             this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
                 if (result !== true) {
                     callback(new ServerErrors.WrongMasterPassword());

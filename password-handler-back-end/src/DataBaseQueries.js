@@ -1,5 +1,7 @@
 const ServerErrors = require('./errors');
 
+const MysqlErrorCodes = require('mysql-error-codes');
+
 const TokenGenerator = require('./tokenGenerator');
 
 class DataBaseQueries {
@@ -21,8 +23,23 @@ class DataBaseQueries {
         ];
         dbConn.query(sql, [values], (err, result) => {
             if (err) {
-                console.log(err);
-                callback(false);
+                if (err.errno === MysqlErrorCodes.ER_DUP_ENTRY) {
+                    const errWords = err.sqlMessage.split(" ");
+                    const fieldDB = errWords[5];
+                    
+                    if (fieldDB === "'users.PRIMARY'") {
+                        callback(new ServerErrors.DuplicateUname());
+                        return;
+                    }
+                    if (fieldDB === "'users.email'") {
+                        callback(new ServerErrors.DuplicateEmail());
+                        return;
+                    }
+                    callback(new ServerErrors.InternalServerError());
+                    return;
+                }
+                callback(new ServerErrors.InternalServerError());
+                return;
             }
             else {
                 console.log("Number affected rows " + result.affectedRows);
@@ -39,8 +56,13 @@ class DataBaseQueries {
         let name = uname;
         dbConn.query(sql, name, (err, result) => {
             if (err) {
+                if (err.errno === MysqlErrorCodes.ER_KEY_NOT_FOUND) {
+                    callback(new ServerErrors.NotFound());
+                    return;
+                }
                 console.log(err);
-                callback(false);
+                
+                callback(new ServerErrors.InternalServerError());
             }
             else {
                 console.log("Number affected rows " + result.affectedRows);
@@ -101,6 +123,10 @@ class DataBaseQueries {
             }
             else {
                 try {
+                    if (result.length <= 0) {
+                        callback(new ServerErrors.InvalidToken());
+                        return;
+                    }
                     console.log("Number affected rows " + result.affectedRows);
                     let token = result[0]["token"];
                     console.log("token " +token);
@@ -161,58 +187,59 @@ class DataBaseQueries {
     }
 
     static getUserEmailToken(dbConn, uname, callback){
-        var sql = `SELECT email_token FROM users WHERE users.uname = "${uname}"`;
+        var sql = `SELECT email_token FROM users WHERE users.uname = "${uname}" AND CURRENT_TIMESTAMP() - email_token_timestamp < 3600`;
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
-                callback(null);
+                callback(new ServerErrors.InvalidToken());
             }
             else {
                 try {
                     console.log("Number affected rows " + result.affectedRows);
                     let token = result[0]["email_token"];
                     console.log(token);
-                    callback(null, token);
+                    callback(token);
 
                 }
                 catch (error) {
-                    callback(error);
+                    console.log(error);
+                    callback(new ServerErrors.InternalServerError());
                 }
             }
         });
     }
 
-    static getUnameFromEmailToken(dbConn, token, callback){
-        var sql = `SELECT uname FROM users WHERE users.email_token = "${token}" AND CURRENT_TIMESTAMP() - email_token_timestamp < 3600`;
-        dbConn.query(sql, (err, result) => {
-            if (err) {
-                console.log(err);
-                callback(err);
-            } 
-            else {
-                try {
-                    console.log("Number affected rows " + result.affectedRows);
-                    let uname = result[0]["uname"];
-                    console.log("uname " + uname);
-                    if (uname) {
-                        callback(null, uname);
-                    }
-                    else {
-                        callback(new ServerErrors.InvalidToken());
+    // static getUnameFromEmailToken(dbConn, token, callback){
+    //     var sql = `SELECT uname FROM users WHERE users.email_token = "${token}" AND CURRENT_TIMESTAMP() - email_token_timestamp < 3600`;
+    //     dbConn.query(sql, (err, result) => {
+    //         if (err) {
+    //             console.log(err);
+    //             callback(err);
+    //         } 
+    //         else {
+    //             try {
+    //                 console.log("Number affected rows " + result.affectedRows);
+    //                 let uname = result[0]["uname"];
+    //                 console.log("uname " + uname);
+    //                 if (uname) {
+    //                     callback(null, uname);
+    //                 }
+    //                 else {
+    //                     callback(new ServerErrors.InvalidToken());
 
-                    }
+    //                 }
 
-                }
-                catch (error) {
-                    if (error instanceof TypeError) {
-                        callback(new ServerErrors.InvalidToken());
-                        return;
-                    }
-                    callback(error);
-                }
-            }
-        });
-    }
+    //             }
+    //             catch (error) {
+    //                 if (error instanceof TypeError) {
+    //                     callback(new ServerErrors.InvalidToken());
+    //                     return;
+    //                 }
+    //                 callback(error);
+    //             }
+    //         }
+    //     });
+    // }
 
     static addAdmin(dbConn, uname, email, hashedPassword, salt, callback) {
         var sql = "INSERT INTO `admins` VALUES ? ";
@@ -309,7 +336,7 @@ class DataBaseQueries {
         dbConn.query(sql, [values], (err, result) => {
             if (err) {
                 console.log(err);
-                callback(false);
+                callback(new ServerErrors.InternalServerError());
             }
             else {
                 console.log("Number affected rows " + result.affectedRows);

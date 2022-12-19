@@ -17,12 +17,30 @@ exports.confirmIpUser = function (body, uname, emailToken) {
     console.log("emailToken " + emailToken);
     let userIP = body["ip"];
     backEndHandler.addIPtoDB(uname, emailToken, userIP, (result) => {
+      if (result instanceof ServerErrors.InternalServerError) {
+        reject(500);
+        return;
+      }
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(403);
+        return;
+      }
+
+      if (result instanceof ServerErrors.ServerError) {
+        reject(500);
+        return;
+      }
+
+      if (result == false) {
+        reject(400);
+        return;
+      }
       if (result) {
-        resolve();
+        resolve(200);
 
       }
       else {
-        reject();
+        reject(400);
 
       }
       
@@ -46,6 +64,36 @@ exports.createUser = function (body) {
     let masterpwd = body["password"];
     let userIP = body["ip"];
     backEndHandler.addUser(uname, email, masterpwd, userIP, (result) => {
+      if (result instanceof ServerErrors.InternalServerError) {
+        reject(500);
+        return;
+      }
+      if (result instanceof ServerErrors.DuplicateEmail) {
+        reject(471);
+        return;
+      }
+      if (result instanceof ServerErrors.DuplicateUname) {
+        reject(470);
+        return;
+      }
+
+      if (result instanceof ServerErrors.ServerError) {
+        reject(500);
+        return;
+      }
+
+      if (result == false) {
+        reject(400);
+        return;
+      }
+      if (result) {
+        resolve(200);
+
+      }
+      else {
+        reject(400);
+
+      }
       if (result) {
         resolve();
 
@@ -69,12 +117,25 @@ exports.createUser = function (body) {
 exports.deleteUser = function (uname, userToken) {
   return new Promise(function (resolve, reject) {
     backEndHandler.removeUser(uname, userToken, (result) => {
+      if (result instanceof ServerErrors.InternalServerError) {
+        reject(500);
+        return;
+      }
       if (result instanceof ServerErrors.InvalidToken) {
-        reject(400);
+        reject(403);
+        return;
+      }
+      if (result instanceof ServerErrors.NotFound) {
+        reject(404);
         return;
       }
       if (result == false) {
-        reject(404);
+        reject(400);
+        return;
+      }
+
+      if (result instanceof ServerErrors.ServerError) {
+        reject(500);
         return;
       }
       resolve(200);
@@ -100,11 +161,16 @@ exports.getUserByName = function (uname, userToken) {
         return;
       }
       if (result instanceof ServerErrors.InvalidToken) {
-        reject(400);
+        reject(403);
         return;
       }
       if (result instanceof ServerErrors.NoRowsEffectedInDb) {
         reject(404);
+        return;
+      }
+
+      if (result instanceof ServerErrors.ServerError) {
+        reject(500);
         return;
       }
       resolve(result);
@@ -125,17 +191,34 @@ exports.loginUser = function (body, uname) {
     let masterpwd = body["password"];
     let userIP = body["ip"];
     backEndHandler.loginUser(uname, masterpwd, userIP, (result) => {
-      if (result === null) {
-        reject();
-
+      if (result instanceof ServerErrors.InternalServerError) {
+        reject(500);
+        return;
       }
-      else if (result instanceof ServerErrors.EmailConformationNeeded) {
+      if (result instanceof ServerErrors.InvalidToken) {
         reject(403);
+        return;
       }
-      else {
-        let userToken = {"user_token": result};
-        resolve(userToken);
+      if (result instanceof ServerErrors.EmailConformationNeeded) {
+        reject(401);
+        return;
       }
+      if (result instanceof ServerErrors.InvalidLogin) {
+        reject(403);
+        return;
+      }
+      if (result instanceof ServerErrors.NotFound) {
+        reject(404);
+        return;
+      }
+
+      if (result instanceof ServerErrors.ServerError) {
+        reject(500);
+        return;
+      }
+      console.log(result);
+      let userToken = {"user_token": result};
+      resolve(userToken);
     });
 
   });
@@ -152,11 +235,21 @@ exports.loginUser = function (body, uname) {
 exports.logoutUser = function (uname, userToken) {
   return new Promise(function (resolve, reject) {
     backEndHandler.cancelUserToken(uname, userToken, (result) => {
+      console.log(result);
+      if (result instanceof ServerErrors.InternalServerError) {
+        reject(500);
+        return;
+      }
       if (result instanceof ServerErrors.InvalidToken) {
-        reject(400);
+        reject(403);
         return;
       }
       if (result == false) {
+        reject(400);
+        return;
+      }
+
+      if (result instanceof ServerErrors.ServerError) {
         reject(500);
         return;
       }
@@ -183,8 +276,13 @@ exports.updateUser = function (body, uname, userToken) {
     let newPassword = body["newPassword"];
     backEndHandler.verifyUser(uname, userToken, (result) => {
       if (result instanceof ServerErrors.InvalidToken) {
-        reject(400);
+        reject(403);
       }
+      if (result instanceof ServerErrors.ServerError) {
+        reject(500);
+        return;
+      }
+
       if (newUname) {
         backEndHandler.changeUname(uname, newUname, userToken, (result) => {
   
@@ -218,6 +316,12 @@ exports.getUname = function(identification) {
         reject(404);
         return;
       }
+
+      if (result instanceof ServerErrors.ServerError) {
+        reject(500);
+        return;
+      }
+
       let response = {
         "uname": result
       }

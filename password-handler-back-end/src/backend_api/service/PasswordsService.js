@@ -17,10 +17,15 @@ exports.readPasswords = function (uname, userToken) {
   return new Promise(function (resolve, reject) {
     backEndHandler.getAllPasswords(uname, userToken, (result) => {
       if (result instanceof ServerErrors.InvalidToken) {
-        reject(400);
+        reject(403);
         return;
       }
       if (result instanceof ServerErrors.InternalServerError) {
+        reject(500);
+        return;
+      }
+
+      if (result instanceof ServerErrors.ServerError) {
         reject(500);
         return;
       }

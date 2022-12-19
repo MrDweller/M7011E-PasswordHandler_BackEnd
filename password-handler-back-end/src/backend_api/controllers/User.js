@@ -6,10 +6,10 @@ var User = require('../service/UserService');
 module.exports.confirmIpUser = function confirmIpUser (req, res, next, body, uname, email_token) {
   User.confirmIpUser(body, uname, email_token)
     .then(function (response) {
-      utils.writeHeaders(res, null, 200);
+      utils.writeHeaders(res, null, response);
     })
     .catch(function (response) {
-      utils.writeHeaders(res, null, 400);
+      writeErrorCode(res, response);
     });
 };
 
@@ -19,7 +19,7 @@ module.exports.createUser = function createUser (req, res, next, body) {
       utils.writeHeaders(res, null, 201);
     })
     .catch(function (response) {
-      utils.writeHeaders(res, null, 400);
+      writeErrorCode(res, response);
     });
 };
 
@@ -29,7 +29,7 @@ module.exports.deleteUser = function deleteUser (req, res, next, uname, user_tok
       utils.writeHeaders(res, null, response);
     })
     .catch(function (response) {
-      utils.writeHeaders(res, null, response);
+      writeErrorCode(res, response);
     });
 };
 
@@ -39,7 +39,7 @@ module.exports.getUname = function getUname(req, res, next, identification) {
       utils.writeJson(res, response);
     })
     .catch(function (response) {
-      utils.writeHeaders(res, null, response);
+      writeErrorCode(res, response);
     });
 
 }
@@ -50,7 +50,7 @@ module.exports.getUserByName = function getUserByName (req, res, next, uname, us
       utils.writeJson(res, response);
     })
     .catch(function (response) {
-      utils.writeHeaders(res, null, response);
+      writeErrorCode(res, response);
     });
 };
 
@@ -60,13 +60,7 @@ module.exports.loginUser = function loginUser (req, res, next, body, uname) {
       utils.writeHeaders(res, response, 200);
     })
     .catch(function (response) {
-      if (Number.isInteger(response)){
-        utils.writeHeaders(res, null, response);
-      }
-      else {
-        utils.writeHeaders(res, null, 400);
-
-      }
+      writeErrorCode(res, response);
     });
 };
 
@@ -76,7 +70,7 @@ module.exports.logoutUser = function logoutUser (req, res, next, uname, user_tok
       utils.writeHeaders(res, null, response);
     })
     .catch(function (response) {
-      utils.writeHeaders(res, null, response);
+      writeErrorCode(res, response);
     });
 };
 
@@ -86,6 +80,16 @@ module.exports.updateUser = function updateUser (req, res, next, body, uname, us
       utils.writeHeaders(res, null, response);
     })
     .catch(function (response) {
-      utils.writeHeaders(res, null, response);
+      writeErrorCode(res, response);
     });
 };
+
+function writeErrorCode(res, response) {
+  if (Number.isInteger(response)){
+    utils.writeHeaders(res, null, response);
+  }
+  else {
+    utils.writeHeaders(res, null, 400);
+
+  }
+}

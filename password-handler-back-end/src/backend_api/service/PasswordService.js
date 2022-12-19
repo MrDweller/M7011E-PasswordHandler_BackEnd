@@ -20,14 +20,19 @@ exports.createPassword = function (body, uname, userToken) {
     let website_uname = body["website_uname"];
     backEndHandler.addPassword(masterpwd, website_url, website_uname, uname, userToken, (result) => {
       if (result instanceof ServerErrors.InvalidToken) {
-        reject(400);
+        reject(403);
         return;
       }
       if (result instanceof ServerErrors.WrongMasterPassword) {
-        reject(400);
+        reject(403);
         return;
       }
       if (result instanceof ServerErrors.InternalServerError) {
+        reject(500);
+        return;
+      }
+
+      if (result instanceof ServerErrors.ServerError) {
         reject(500);
         return;
       }
@@ -53,14 +58,19 @@ exports.decryptPassword = function (body, uname, userToken) {
     let website_uname = body["website_uname"];
     backEndHandler.readPassword(masterpwd, website_url, website_uname, uname, userToken, (result) => {
       if (result instanceof ServerErrors.InvalidToken) {
-        reject(400);
+        reject(403);
         return;
       }
       if (result instanceof ServerErrors.WrongMasterPassword) {
-        reject(400);
+        reject(403);
         return;
       }
       if (result instanceof ServerErrors.InternalServerError) {
+        reject(500);
+        return;
+      }
+
+      if (result instanceof ServerErrors.ServerError) {
         reject(500);
         return;
       }
