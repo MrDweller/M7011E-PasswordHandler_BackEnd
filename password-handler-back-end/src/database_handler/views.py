@@ -27,7 +27,6 @@ class UserApiView(APIView):
 
             temp_dict = {}
             temp_dict = request.data.copy()
-            print(temp_dict)
             hashed_password = hash_password(temp_dict.get("password"))
             hashed_hashed_password = hash_password(hashed_password[0])
 
@@ -72,9 +71,9 @@ class GetUserApiView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
         
         if admin == False:
-            userToken = request.headers.get("user_token")
+            userToken = request.headers.get("user-token")
         else:
-            userToken = request.headers.get("admin_token")
+            userToken = request.headers.get("admin-token")
             
         if userToken != user_object.token:
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -102,9 +101,9 @@ class GetUserApiView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
         
         if admin == False:
-            userToken = request.headers.get("user_token")
+            userToken = request.headers.get("user-token")
         else:
-            userToken = request.headers.get("admin_token")
+            userToken = request.headers.get("admin-token")
             
         if userToken != user_object.token:
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -113,15 +112,17 @@ class GetUserApiView(APIView):
         if valid_token != True:
             return Response(valid_token, status=status.HTTP_200_OK)
 
+        print("REQUEST DATA UNAME ", request.data.get('uname'))
+        print("REQUEST DATA EMAIL ", request.data.get('email'))
         if request.method == 'PUT': 
             if request.data.get('uname') != None:
-                user_object.uname = request.data.get('uname')
-                user_object.save()
+                Users.objects.filter(token=userToken).update(uname=request.data.get('uname'))
                 return Response(status=status.HTTP_200_OK)
             
             if request.data.get('email') != None:
-                user_object.email = request.data.get('email')
-                user_object.save()
+                # user_object.email = request.data.get('email')
+                # user_object.save()
+                Users.objects.filter(token=userToken).update(email=request.data.get('email'))
                 return Response(status=status.HTTP_200_OK)
 
             if request.data.get('password') != None:
@@ -190,9 +191,9 @@ class GetUserApiView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
         
         if admin == False:
-            userToken = request.headers.get("user_token")
+            userToken = request.headers.get("user-token")
         else:
-            userToken = request.headers.get("admin_token")
+            userToken = request.headers.get("admin-token")
             
         if userToken != user_object.token:
             return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -267,7 +268,7 @@ class AdminApiView(APIView):
     serializer_class = AdminsSerializerApi
 
     def post(self, request):
-        superAdminToken = request.headers.get("super_admin_token")
+        superAdminToken = request.headers.get("super-admin-token")
 
         try:
             admin_object = Admins.objects.get(token=superAdminToken)
@@ -333,7 +334,7 @@ class SuperAdminsApiView(APIView):
             return Response(status=status.HTTP_201_CREATED)
 
 
-class   IpsApiView(APIView):
+class IpsApiView(APIView):
 
     def get(self, request):
         if request.method == 'GET':
@@ -393,7 +394,7 @@ class NewWebsitePasswordsApiView(APIView):
         except Users.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        userToken = request.headers.get("user_token")
+        userToken = request.headers.get("user-token")
         if userToken != user_object.token:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         
@@ -440,7 +441,7 @@ class NewWebsitePasswordsApiView(APIView):
         except Users.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        userToken = request.headers.get("user_token")
+        userToken = request.headers.get("user-token")
         if userToken != user_object.token:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         
@@ -647,6 +648,28 @@ class ChangeWebsitePasswordsApiView(APIView):
             return Response(status=status.HTTP_200_OK)
 
 
+class GetUnameView(APIView):
+
+    def get(self, request, identification, format=None):
+
+        if request.method == 'GET':
+            temp_dict = {}
+            temp_dict = request.data.copy()
+
+            try:
+                user_object = Users.objects.get(uname=identification)
+                # temp_dict['uname'] = request.data.get('identification')
+                temp_dict['uname'] = user_object.uname
+            except Users.DoesNotExist:
+                user_object = Users.objects.get(email=identification)
+                temp_dict['uname'] = user_object.uname
+            except:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+            serializer = GetUserSerializer(temp_dict)
+            
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class LoginApiView(APIView):
 
     serializer_class = LoginApiSerializer
@@ -655,6 +678,7 @@ class LoginApiView(APIView):
 
         cursor = connection.cursor()
 
+    
         if request.method == 'POST':
             temp_dict = {}
             temp_dict = request.data.copy()
@@ -703,7 +727,7 @@ class LoginApiView(APIView):
                   
                 except SMTPException:
                     return Response(status=status.HTTP_404_NOT_FOUND)
-                return Response(status=status.HTTP_200_OK)
+                return Response(status=status.HTTP_200_OK)  
             else:
                 token = generate_token(32)
                 user_object.token = token
@@ -712,9 +736,11 @@ class LoginApiView(APIView):
 
                 response = Response(status=status.HTTP_200_OK)
                 if(admin==False): 
-                    response['user_token'] = token
+                    response.headers['user-token'] = token
                 else:
-                    response['admin_token'] = token
+                    response.headers['admin-token'] = token
+
+                print("RESPONSE HeadDERS", response.headers)
                 return response
 
 
@@ -733,9 +759,9 @@ class LogoutApiView(APIView):
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             
             if admin == False:
-                userToken = request.headers.get("user_token")
+                userToken = request.headers.get("user-token")
             else:
-                userToken = request.headers.get("admin_token")
+                userToken = request.headers.get("admin-token")
 
             if userToken != user_object.token:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -770,7 +796,7 @@ class ConfirmIpApiView(APIView):
             if valid_email_token != True:
                 return Response(valid_email_token, status=status.HTTP_200_OK)
 
-            emailToken = request.headers.get("email_token")
+            emailToken = request.headers.get("email-token")
             if emailToken != user_object.email_token:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -863,7 +889,7 @@ class ReadAllUserPasswordsView(APIView):
         except Users.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        userToken = request.headers.get("user_token")
+        userToken = request.headers.get("user-token")
         if userToken != user_object.token:
             return Response(status=status.HTTP_400_BAD_REQUEST)
         
@@ -886,8 +912,6 @@ class GetWebsitePasswordsApiView(APIView):
     serializer_class = GetPasswordApiSerializer
 
     def post(self, request):
-        print(request.data)
-
         if request.method == 'POST':
            
             try:

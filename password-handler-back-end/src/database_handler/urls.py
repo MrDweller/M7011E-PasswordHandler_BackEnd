@@ -9,6 +9,7 @@ urlpatterns = [
     # USERS
     path('user', views.UserApiView.as_view(), name="user"),
     path('user/<str:uname>/login', views.LoginApiView.as_view(), name="login"),
+    path('user/<str:identification>/uname', views.GetUnameView.as_view(), name="get_uname"),
     path('user/<str:uname>/logout', views.LogoutApiView.as_view(), name="logout"),
     path('user/<str:uname>', views.GetUserApiView.as_view(), name="get_user"),
     path('getUsers', views.UsersApiView.as_view(), name="get_users"),

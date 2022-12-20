@@ -63,6 +63,35 @@ MIDDLEWARE = [
 
 CORS_ORIGIN_ALLOW_ALL = True # Dev mode
 
+CORS_EXPOSE_HEADERS = [
+    "user-token",
+    "admin-token",
+]
+
+CORS_ALLOW_HEADERS = [
+    # our
+    "user-token",
+    "admin-token",
+
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
+CORS_ALLOW_METHODS = [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE",
+]
+
+
 CORS_ALLOWED_ORIGINS = [
 'http://localhost:3000',
 'http://localhost:8000',
