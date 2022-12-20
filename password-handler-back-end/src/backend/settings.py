@@ -66,12 +66,14 @@ CORS_ORIGIN_ALLOW_ALL = True # Dev mode
 CORS_EXPOSE_HEADERS = [
     "user-token",
     "admin-token",
+    "email-token",
 ]
 
 CORS_ALLOW_HEADERS = [
     # our
     "user-token",
     "admin-token",
+    "email-token",
 
     "accept",
     "accept-encoding",

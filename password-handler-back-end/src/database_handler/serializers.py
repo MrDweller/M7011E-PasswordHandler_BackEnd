@@ -172,5 +172,5 @@ class ReadPasswordsSerializer(serializers.ModelSerializer):
 class GetPasswordApiSerializer(serializers.ModelSerializer):
     class Meta:
         model = WebsitePasswordApi
-        fields = ["token", "website_uname", "website_url", "password"]
+        fields = ["website_uname", "website_url", "website_password"]
 

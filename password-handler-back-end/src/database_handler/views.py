@@ -76,18 +76,18 @@ class GetUserApiView(APIView):
             userToken = request.headers.get("admin-token")
             
         if userToken != user_object.token:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_403_FORBIDDEN)
         
         valid_token = check_token_validity_by_timestamp(user_object)
         if valid_token != True:
-            return Response(valid_token, status=status.HTTP_200_OK)
+            return Response(valid_token, status.HTTP_403_FORBIDDEN)
 
         if request.method == 'GET': 
             if admin == False:
                 serializer = UsersSerializer(user_object)
             else:
                 serializer = AdminSerializer(user_object)
-            return Response(serializer.data)
+            return Response(serializer.data, status.HTTP_200_OK)
 
     def put(self, request, uname, format=None):
         
@@ -106,14 +106,12 @@ class GetUserApiView(APIView):
             userToken = request.headers.get("admin-token")
             
         if userToken != user_object.token:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_403_FORBIDDEN)
         
         valid_token = check_token_validity_by_timestamp(user_object)
         if valid_token != True:
-            return Response(valid_token, status=status.HTTP_200_OK)
+            return Response(valid_token, status=status.HTTP_403_FORBIDDEN)
 
-        print("REQUEST DATA UNAME ", request.data.get('uname'))
-        print("REQUEST DATA EMAIL ", request.data.get('email'))
         if request.method == 'PUT': 
             if request.data.get('uname') != None:
                 Users.objects.filter(token=userToken).update(uname=request.data.get('uname'))
@@ -129,7 +127,7 @@ class GetUserApiView(APIView):
                 try:
                     user_object_passwords = Passwords.objects.filter(uname=user_object.uname)
                 except Passwords.DoesNotExist:
-                    return Response(status=status.HTTP_400_BAD_REQUEST)
+                    return Response(status=status.HTTP_404_NOT_FOUND)
                 
                 temp_dict = {}
                 temp_dict = request.data.copy()
@@ -140,7 +138,7 @@ class GetUserApiView(APIView):
                     old_masterpwd_hashedhashed = hash_password_salt(old_masterpwd_hashed, user_object.salt_2)
 
                     if (old_masterpwd_hashedhashed != user_object.hashedhashed_masterpwd):
-                        return Response(status=status.HTTP_400_BAD_REQUEST)
+                        return Response(status=status.HTTP_403_FORBIDDEN)
 
                     hashed_password = hash_password(temp_dict.get("newPassword"))
                     hashed_hashed_password = hash_password(hashed_password[0])
@@ -172,7 +170,7 @@ class GetUserApiView(APIView):
                     old_masterpwd_hashed = hash_password_salt(old_masterpwd_decrypted, user_object.salt)
 
                     if (old_masterpwd_hashed != user_object.hashed_pwd):
-                        return Response(status=status.HTTP_400_BAD_REQUEST)
+                        return Response(status=status.HTTP_403_FORBIDDEN)
                     
                     hashed_password = hash_password(temp_dict.get("password"))
                     user_object.pwd = hashed_password[0]
@@ -196,7 +194,7 @@ class GetUserApiView(APIView):
             userToken = request.headers.get("admin-token")
             
         if userToken != user_object.token:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_403_FORBIDDEN)
         
         valid_token = check_token_validity_by_timestamp(user_object)
         if valid_token != True:
@@ -301,7 +299,6 @@ class AdminApiView(APIView):
 
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
-                return Response(status=status.HTTP_201_CREATED)
             
             serializer = IpsSerializer(data=temp_dict)
             if serializer.is_valid(raise_exception=True):
@@ -385,22 +382,24 @@ class FeedbackApiView(APIView):
 
 class NewWebsitePasswordsApiView(APIView):
 
-    serializer_class = PasswordsApiSerializer
+    
 
     def post(self, request, uname, format=None):
+
+        serializer_class = PasswordsApiSerializer
 
         try:
             user_object = Users.objects.get(uname=uname)
         except Users.DoesNotExist:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
         userToken = request.headers.get("user-token")
         if userToken != user_object.token:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_403_FORBIDDEN)
         
         valid_token = check_token_validity_by_timestamp(user_object)
         if valid_token != True:
-            return Response(valid_token, status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_403_FORBIDDEN)
         
 
         if request.method == 'POST':
@@ -413,7 +412,7 @@ class NewWebsitePasswordsApiView(APIView):
             masterpwd_hashedhashed = hash_password_salt(masterpwd_hashed, user_object.salt_2)
 
             if (masterpwd_hashedhashed != user_object.hashedhashed_masterpwd):
-                return Response(status=status.HTTP_400_CONFLICT)
+                return Response(status=status.HTTP_403_FORBIDDEN)
 
             key = codecs.decode(user_object.encrypted_key, 'hex_codec')  # from hex to byte
             iv = codecs.decode(user_object.iv, 'hex_codec')
@@ -439,15 +438,15 @@ class NewWebsitePasswordsApiView(APIView):
         try:
             user_object = Users.objects.get(uname=uname)
         except Users.DoesNotExist:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
         userToken = request.headers.get("user-token")
         if userToken != user_object.token:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_403_FORBIDDEN)
         
         valid_token = check_token_validity_by_timestamp(user_object)
         if valid_token != True:
-            return Response(valid_token, status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_403_FORBIDDEN)
 
         
         if request.method == 'PUT':
@@ -456,7 +455,7 @@ class NewWebsitePasswordsApiView(APIView):
                                                     website_url=request.data.get('website_url'), 
                                                     website_uname=request.data.get('website_uname'))
             except Passwords.DoesNotExist:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                return Response(status=status.HTTP_404_NOT_FOUND)
 
             temp_dict = {}
             temp_dict = request.data.copy()
@@ -466,7 +465,7 @@ class NewWebsitePasswordsApiView(APIView):
             masterpwd_hashedhashed = hash_password_salt(masterpwd_hashed, user_object.salt_2)
 
             if (masterpwd_hashedhashed != user_object.hashedhashed_masterpwd):
-                return Response(status=status.HTTP_409_CONFLICT)
+                return Response(status=status.HTTP_403_FORBIDDEN)
 
             key = codecs.decode(user_object.encrypted_key, 'hex_codec')  # from hex to byte
             iv = codecs.decode(user_object.iv, 'hex_codec')
@@ -475,8 +474,7 @@ class NewWebsitePasswordsApiView(APIView):
             decrypted_key = decrypt_data(key, masterpwd_hashed.encode(), iv)
             decrypted_website_password = b64encode(decrypt_data(password.encrypted_pwd.encode(), decrypted_key, website_password_iv)).decode("utf-8")
 
-            temp_dict['password'] = decrypted_website_password
-
+            temp_dict['website_password'] = decrypted_website_password
             serializer = GetPasswordApiSerializer(temp_dict)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -690,14 +688,14 @@ class LoginApiView(APIView):
                 user_object = Admins.objects.get(uname=uname)
                 admin = True
             except:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                return Response(status=status.HTTP_404_NOT_FOUND)
 
             masterpwd_decrypted = request.data.get('password')
             masterpwd_hashed = hash_password_salt(masterpwd_decrypted, user_object.salt_1)
             masterpwd_hashedhashed = hash_password_salt(masterpwd_hashed, user_object.salt_2)
 
             if (masterpwd_hashedhashed != user_object.hashedhashed_masterpwd):
-                return Response(status=status.HTTP_409_CONFLICT)
+                return Response(status=status.HTTP_403_FORBIDDEN)
 
             cursor.execute('SELECT ip FROM ips WHERE uname = %s ', [user_object.uname])
             all_user_ips = cursor.fetchall()
@@ -717,8 +715,8 @@ class LoginApiView(APIView):
                                 'We are confirming that a new login location has been detected for ' +
                                 user_object.uname + ' with this IP-address ' + request.data.get('ip') + '.' + '\n' +
                                 'Click the link and follow the instructions to verify the login. \n' +
-                                'Link: ' + 'http://localhost:3000/passwordhandler/confirmIP?token=' + 
-                                str(user_object.email_token) + '&ip=' + request.data.get('ip') + '\n' +
+                                'Link: ' + 'http://localhost:3000/passwordhandler/confirmIP?uname=' + 
+                                user_object.uname + '&token=' +  str(user_object.email_token) + '&ip=' + request.data.get('ip') + '\n' +
                                 'Regards, The PasswordHandler Team!',
                         from_email=settings.EMAIL_HOST_USER,
                         recipient_list=[user_object.email],
@@ -726,8 +724,8 @@ class LoginApiView(APIView):
                     )
                   
                 except SMTPException:
-                    return Response(status=status.HTTP_404_NOT_FOUND)
-                return Response(status=status.HTTP_200_OK)  
+                    return Response(status=status.HTTP_400_BAD_REQUEST)
+                return Response(status=status.HTTP_401_UNAUTHORIZED)  
             else:
                 token = generate_token(32)
                 user_object.token = token
@@ -740,7 +738,6 @@ class LoginApiView(APIView):
                 else:
                     response.headers['admin-token'] = token
 
-                print("RESPONSE HeadDERS", response.headers)
                 return response
 
 
@@ -756,7 +753,7 @@ class LogoutApiView(APIView):
                 user_object = Admins.objects.get(uname=uname)
                 admin = True
             except:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                return Response(status=status.HTTP_404_NOT_FOUND)
             
             if admin == False:
                 userToken = request.headers.get("user-token")
@@ -764,7 +761,7 @@ class LogoutApiView(APIView):
                 userToken = request.headers.get("admin-token")
 
             if userToken != user_object.token:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                return Response(status=status.HTTP_403_FORBIDDEN)
             
             user_object.token = None
             user_object.save()
@@ -783,22 +780,20 @@ class ConfirmIpApiView(APIView):
     def post(self, request, uname, format=None):
         
         if request.method == 'POST':
-            admin = False
             try:
                 user_object = Users.objects.get(uname=uname)
             except Users.DoesNotExist:
                 user_object = Admins.objects.get(uname=uname)
-                admin =True
             except:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                return Response(status=status.HTTP_404_NOT_FOUND)
 
             valid_email_token = check_email_token_validity_by_timestamp(user_object)
             if valid_email_token != True:
-                return Response(valid_email_token, status=status.HTTP_200_OK)
+                return Response(valid_email_token, status=status.HTTP_403_FORBIDDEN)
 
             emailToken = request.headers.get("email-token")
             if emailToken != user_object.email_token:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                return Response(status=status.HTTP_403_FORBIDDEN)
 
             temp_dict = {}
             temp_dict = request.data.copy()
@@ -809,7 +804,7 @@ class ConfirmIpApiView(APIView):
             try:
                 if serializer.is_valid(raise_exception=True):
                     serializer.save()
-                    return Response(status=status.HTTP_201_CREATED)
+                    return Response(status=status.HTTP_200_OK)
             except:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
 
@@ -887,21 +882,21 @@ class ReadAllUserPasswordsView(APIView):
         try:
             user_object = Users.objects.get(uname=uname)
         except Users.DoesNotExist:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
         userToken = request.headers.get("user-token")
         if userToken != user_object.token:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_403_FORBIDDEN)
         
         valid_token = check_token_validity_by_timestamp(user_object)
         if valid_token != True:
-            return Response(valid_token, status=status.HTTP_200_OK)
+            return Response(valid_token, status=status.HTTP_403_FORBIDDEN)
        
         if request.method == 'GET':
             try:
                 passwords = Passwords.objects.filter(uname=user_object.uname)
             except Passwords.DoesNotExist:
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+                return Response(status=status.HTTP_404_NOT_FOUND)
 
             serializer = ReadPasswordsSerializer(passwords, context={'request': request}, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
@@ -945,7 +940,7 @@ class GetWebsitePasswordsApiView(APIView):
             decrypted_key = decrypt_data(key, masterpwd_hashed.encode(), iv)
             decrypted_website_password = b64encode(decrypt_data(password.encrypted_pwd.encode(), decrypted_key, website_password_iv)).decode("utf-8")
 
-            temp_dict['password'] = decrypted_website_password
+            temp_dict['website_password'] = decrypted_website_password
 
             serializer = GetPasswordApiSerializer(temp_dict)
             return Response(serializer.data, status=status.HTTP_200_OK)

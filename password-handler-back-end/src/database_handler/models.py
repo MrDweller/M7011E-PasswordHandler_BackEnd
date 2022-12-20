@@ -149,8 +149,6 @@ class UserTokenApi(models.Model):
 
 
 class WebsitePasswordApi(models.Model):
-    token = models.CharField(max_length=128)
     website_url = models.CharField(max_length=128)
     website_uname = models.CharField(max_length=128)
-    password = models.CharField(max_length=256)
     website_password = models.CharField(max_length=256)
