@@ -1,5 +1,6 @@
 'use strict';
 const backEndHandler = require('../../backendHandler');
+const ServerErrors = require('../../errors');
 
 /**
  * Confirms the given ip of the user with the given token.
@@ -11,7 +12,22 @@ const backEndHandler = require('../../backendHandler');
  **/
 exports.confirmIpAdmin = function(body,uname,emailToken) {
   return new Promise(function(resolve, reject) {
-    resolve();
+    let ip = body["ip"];
+
+    backEndHandler.confirmIpAdmin(uname, emailToken, ip, (result) => {
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(403);
+        return;
+      }
+
+      if (result !== true) {
+        reject(500);
+        return;
+      }
+      resolve(200);
+
+    });
+
   });
 }
 
@@ -24,12 +40,57 @@ exports.confirmIpAdmin = function(body,uname,emailToken) {
  * superAdminToken Token 
  * no response value expected for this operation
  **/
-exports.createAdmin = function(body,superAdminToken) {
+exports.createAdmin = function(body, super_admin_uname, super_admin_token) {
   return new Promise(function(resolve, reject) {
-    resolve();
+    let uname = body["uname"];
+    let email = body["email"];
+    let ip = body["ip"];
+    backEndHandler.createAdmin(super_admin_uname, super_admin_token, uname, email, ip, (result) => {
+      if (result instanceof ServerErrors.EmailConformationNeeded) {
+        reject(401);
+        return;
+      }
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(403);
+        return;
+      }
+      if (result instanceof ServerErrors.DuplicateUname) {
+        reject(470);
+        return;
+      }
+      if (result instanceof ServerErrors.DuplicateEmail) {
+        reject(471);
+        return;
+      }
+
+      if (result !== true) {
+        reject(500);
+        return;
+      }
+      resolve(201);
+
+    });
   });
 }
 
+exports.addAdminPassword = function(body, uname, email_token) {
+  return new Promise(function(resolve, reject) {
+    let password = body["password"];
+    backEndHandler.addAdminPassword(uname, email_token, password, (result) => {
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(403);
+        return;
+      }
+
+      if (result !== true) {
+        reject(500);
+        return;
+      }
+      resolve(200);
+
+    });
+  });
+}
 
 /**
  * Delete admin
@@ -40,9 +101,20 @@ exports.createAdmin = function(body,superAdminToken) {
  * superAdminToken Token  (optional)
  * no response value expected for this operation
  **/
-exports.deleteAdmin = function(uname,adminToken,superAdminToken) {
+exports.deleteAdmin = function(uname,adminToken, super_admin_uname, super_admin_token) {
   return new Promise(function(resolve, reject) {
-    resolve();
+    backEndHandler.deleteAdmin(uname, adminToken, super_admin_uname, super_admin_token, (result) => {
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(403);
+        return;
+      }
+
+      if (result !== true) {
+        reject(500);
+        return;
+      }
+      resolve(200);
+    });
   });
 }
 
@@ -55,18 +127,21 @@ exports.deleteAdmin = function(uname,adminToken,superAdminToken) {
  * adminToken Token 
  * returns UserInfo
  **/
-exports.getAdminByName = function(uname,adminToken) {
+exports.getAdminByName = function(uname, adminToken) {
   return new Promise(function(resolve, reject) {
-    var examples = {};
-    examples['application/json'] = {
-  "uname" : "john",
-  "email" : "john@email.com"
-};
-    if (Object.keys(examples).length > 0) {
-      resolve(examples[Object.keys(examples)[0]]);
-    } else {
-      resolve();
-    }
+    backEndHandler.getAdminInfo(uname, adminToken, (result) => {
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(403);
+        return;
+      }
+
+      if (result instanceof ServerErrors.ServerError) {
+        reject(500);
+        return;
+      }
+      resolve(result);
+
+    });
   });
 }
 
@@ -80,7 +155,27 @@ exports.getAdminByName = function(uname,adminToken) {
  **/
 exports.loginAdmin = function(body,uname) {
   return new Promise(function(resolve, reject) {
-    resolve();
+    let password = body["password"];
+    let ip = body["ip"];
+    backEndHandler.loginAdmin(uname, password, ip, (result) => {
+      if (result instanceof ServerErrors.EmailConformationNeeded) {
+        reject(401);
+        return;
+      }
+      if (result instanceof ServerErrors.InvalidLogin) {
+        reject(403);
+        return;
+      }
+
+      if (result instanceof ServerErrors.ServerError) {
+        reject(500);
+        return;
+      }
+      let response = {
+        "admin-token": result
+      }
+      resolve(response);
+    });
   });
 }
 
@@ -94,7 +189,25 @@ exports.loginAdmin = function(body,uname) {
  **/
 exports.logoutAdmin = function(uname,adminToken) {
   return new Promise(function(resolve, reject) {
-    resolve();
+    backEndHandler.cancelAdminToken(uname,adminToken, (result) => { 
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(403);
+        return;
+      }
+
+      if (result instanceof ServerErrors.ServerError) {
+        reject(500);
+        return;
+      }
+
+      if (result !== true) {
+        reject(500);
+        return;
+      }
+
+      resolve(200);
+    });
+
   });
 }
 
@@ -110,7 +223,29 @@ exports.logoutAdmin = function(uname,adminToken) {
  **/
 exports.updateAdmin = function(body,uname,adminToken) {
   return new Promise(function(resolve, reject) {
-    resolve();
+    let newUname = body["uname"];
+    let newEmail = body["email"];
+    let password = body["password"];
+    let newPassword = body["newPassword"];
+    backEndHandler.updateAdmin(uname, newUname, newEmail, password, newPassword, adminToken, (result) => {
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(403);
+      }
+      if (result instanceof ServerErrors.InvalidLogin) {
+        reject(403);
+      }
+
+      if (result instanceof ServerErrors.ServerError) {
+        reject(500);
+        return;
+      }
+      if (result !== true) {
+        reject(500);
+        return;
+      }
+      resolve(200);
+
+    });
   });
 }
 

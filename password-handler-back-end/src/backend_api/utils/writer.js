@@ -53,3 +53,13 @@ var writeHeadersAndJson = exports.writeHeadersAndJson = function (response, head
   payload = JSON.stringify(payload, null, 2);
   response.end(payload);
 }
+
+var writeErrorCode = exports.writeErrorCode = function (res, response) {
+  if (Number.isInteger(response)){
+    writeHeaders(res, null, response);
+  }
+  else {
+    writeHeaders(res, null, 400);
+
+  }
+}

@@ -58,7 +58,7 @@ paths:
         "200":
           description: successful operation
           headers:
-            user_token:
+            user-token:
               style: simple
               explode: false
               schema:
@@ -69,8 +69,6 @@ paths:
           description: Ip is not authenticated
         "403":
           description: Invalid uname and password supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: User
   /user/{uname}/logout:
     get:
@@ -88,7 +86,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: user_token
+      - name: user-token
         in: header
         required: true
         style: simple
@@ -102,8 +100,6 @@ paths:
           description: Bad request
         "403":
           description: Invalid uname and token supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: User
   /user/{uname}/confirmIp:
     post:
@@ -121,7 +117,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: email_token
+      - name: email-token
         in: header
         required: true
         style: simple
@@ -141,8 +137,6 @@ paths:
           description: Bad request
         "403":
           description: Invalid uname and token supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: User
   /user/{identification}/uname:
     get:
@@ -190,7 +184,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: user_token
+      - name: user-token
         in: header
         required: true
         style: simple
@@ -208,8 +202,6 @@ paths:
           description: Bad request
         "403":
           description: Invalid uname and token supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: User
     put:
       tags:
@@ -226,7 +218,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: user_token
+      - name: user-token
         in: header
         required: true
         style: simple
@@ -246,8 +238,6 @@ paths:
           description: Bad request
         "403":
           description: Invalid uname and token supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: User
     delete:
       tags:
@@ -264,7 +254,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: user_token
+      - name: user-token
         in: header
         required: true
         style: simple
@@ -278,8 +268,6 @@ paths:
           description: Bad request
         "403":
           description: Invalid uname and token supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: User
   /password/{uname}:
     put:
@@ -297,7 +285,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: user_token
+      - name: user-token
         in: header
         required: true
         style: simple
@@ -339,7 +327,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: user_token
+      - name: user-token
         in: header
         required: true
         style: simple
@@ -359,8 +347,6 @@ paths:
           description: Bad request
         "403":
           description: Invalid credentials supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: Password
   /passwords/{uname}:
     get:
@@ -378,7 +364,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: user_token
+      - name: user-token
         in: header
         required: true
         style: simple
@@ -399,8 +385,6 @@ paths:
           description: Bad request
         "403":
           description: Invalid uname and token supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: Passwords
   /admin:
     post:
@@ -410,14 +394,14 @@ paths:
       description: "This creates a new user, on signup."
       operationId: createAdmin
       parameters:
-      - name: super_admin_uname
+      - name: super-admin-uname
         in: header
         required: true
         style: simple
         explode: false
         schema:
           type: string
-      - name: super_admin_token
+      - name: super-admin-token
         in: header
         required: true
         style: simple
@@ -468,17 +452,17 @@ paths:
         "200":
           description: successful operation
           headers:
-            admin_token:
+            admin-token:
               style: simple
               explode: false
               schema:
                 $ref: '#/components/schemas/Token'
         "400":
           description: Bad request
+        "401":
+          description: Ip is not authenticated
         "403":
           description: Invalid uname and password supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: Admin
   /admin/{uname}/logout:
     get:
@@ -496,7 +480,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: admin_token
+      - name: admin-token
         in: header
         required: true
         style: simple
@@ -510,8 +494,6 @@ paths:
           description: Bad request
         "403":
           description: Invalid uname and token supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: Admin
   /admin/{uname}/confirmIp:
     post:
@@ -529,7 +511,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: email_token
+      - name: email-token
         in: header
         required: true
         style: simple
@@ -549,8 +531,6 @@ paths:
           description: Bad request
         "403":
           description: Invalid uname and token supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: Admin
   /admin/{uname}:
     get:
@@ -568,7 +548,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: admin_token
+      - name: admin-token
         in: header
         required: true
         style: simple
@@ -586,8 +566,6 @@ paths:
           description: Bad request
         "403":
           description: Invalid uname and token supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: Admin
     put:
       tags:
@@ -604,7 +582,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: admin_token
+      - name: admin-token
         in: header
         required: true
         style: simple
@@ -624,8 +602,42 @@ paths:
           description: Bad request
         "403":
           description: Invalid uname and token supplied
-        "404":
-          description: User not found
+      x-swagger-router-controller: Admin
+    post:
+      tags:
+      - admin
+      summary: Add admin password
+      description: This can only be done with a valid email token.
+      operationId: addAdminPassword
+      parameters:
+      - name: uname
+        in: path
+        description: uname for user to be updated
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: email-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      requestBody:
+        description: Update an existent user
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Password'
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
       x-swagger-router-controller: Admin
     delete:
       tags:
@@ -642,7 +654,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: admin_token
+      - name: admin-token
         in: header
         required: false
         style: simple
@@ -656,7 +668,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: super_admin_token
+      - name: super-admin-token
         in: header
         required: false
         style: simple
@@ -670,8 +682,6 @@ paths:
           description: Bad request
         "403":
           description: Invalid uname and token supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: Admin
 components:
   schemas:
@@ -787,6 +797,13 @@ components:
         ip:
           type: string
           example: 192.168.1.1
+
+    Password:
+      type: object
+      properties:
+        password:
+          type: string
+          example: "12345"
           
     Ip:
       type: object

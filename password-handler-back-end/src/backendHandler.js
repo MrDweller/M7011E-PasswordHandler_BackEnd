@@ -257,8 +257,8 @@ class BackEndManager {
                                 }
                                 let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?uname='+ uname + '&token=' + token + '&ip=' + userIP + '">link</a> to verify the login.</p>'
                                 this.sendMail(email,'New login location detected','' , html, callback);
+                                callback(new ServerErrors.EmailConformationNeeded())
                             });
-                            callback(new ServerErrors.EmailConformationNeeded())
                         });
                     }
                 });
@@ -591,12 +591,376 @@ class BackEndManager {
 
         transporter.sendMail(mailOptions, function (error, info) {
             if (error) {
-                callback(error)
+                console.log(error);
+                callback(error);
             } else {
                 console.log('Email sent :' + info.response);
             }
         })
     }
+
+
+
+
+    //-------ADMIN--------
+
+    #verifySuperAdmin(super_admin_uname, super_admin_token, callback) {
+        this.verifyAdmin(super_admin_uname, super_admin_token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+
+            DataBaseQueries.isSuperAdmin(this.dbConn, super_admin_uname, (result) => {
+                callback(result);
+
+            })
+        });
+    }
+
+    #addNewEmailTokenAdmin(uname, callback) {
+        let newToken = TokenGenerator.generateToken(20, true);
+        DataBaseQueries.changeUserEmailTokenAdmin(this.dbConn, uname, newToken, (result) => {
+            if (result) {
+                callback(newToken);
+            }
+            else {
+                callback(new ServerErrors.InternalServerError());
+            }
+
+        })
+    }
+
+    verifyAdmin(uname, token, callback) {
+        DataBaseQueries.getAdminToken(this.dbConn, uname, (result) => {
+            console.log(result);
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+            if (result == null) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            if (result !== token) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            callback(true);
+        });
+    }
+
+    verifyEmailTokenAdmin(uname, emailToken, callback) {
+        DataBaseQueries.getAdminEmailToken(this.dbConn, uname, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+            if (result == null) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            if (result !== emailToken) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+
+            DataBaseQueries.cancelAdminEmailToken(this.dbConn, uname, (result) => {
+                if (result){
+                    console.log("Admin email token has been canceled");
+
+                }
+                else {
+                    console.log("Admin email token could not be canceled");
+                }
+            });
+            callback(true);
+        });
+    }
+
+    #addNewTokenAdmin(uname, callback){
+        let newToken = TokenGenerator.generateToken(20, true);
+        DataBaseQueries.changeAdminToken(this.dbConn, uname, newToken, (result) => {
+            if (result) {
+                callback(newToken);
+            }
+            else {
+                callback(new ServerErrors.InternalServerError());
+            }
+
+        })
+    }
+
+    #authenticateAdmin(uname, masterpwd, callback) {
+        DataBaseQueries.getAdminSalt(this.dbConn, uname, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+
+            let salt = result;
+            let hashedPassword = Hash.hashPlainText(masterpwd, salt);
+
+            DataBaseQueries.getAdminPwdForAuthentication(this.dbConn, uname, (result) => {
+                if (result instanceof ServerErrors.ServerError) {
+                    callback(result);
+                    return;
+                }
+
+                let hashedPasswordDb = result;
+                if (hashedPasswordDb.toString() === hashedPassword.toString()) {
+                    callback(true);
+                }
+                else {
+                    callback(false);
+                    return;
+                }
+            });
+        });
+
+    }
+
+    createAdmin(super_admin_uname, super_admin_token, uname, email, ip, callback) {
+        this.#verifySuperAdmin(super_admin_uname, super_admin_token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+
+            DataBaseQueries.addAdmin(this.dbConn, uname, email, (result) => {
+                if (result !== true) {
+                    callback(result);
+                    return;
+                }
+                DataBaseQueries.addIPAdmin(this.dbConn, uname, ip, (result) => {
+                    if (result !== true) {
+                        callback(result);
+                        return;
+                    }
+
+                    this.#addNewEmailTokenAdmin(uname, (result) => {
+                        if (result instanceof ServerErrors.ServerError) {
+                            callback(result);
+                            return;
+                        }
+                        let html = '<p>A new admin account has been created, kindly use this <a href="http://localhost:3000/passwordhandler/createAdmin?uname='+ uname + '&token=' + result + '">link</a> to complete the account.</p>'
+                        this.sendMail(email,'New admin created','' , html, callback);
+                        callback(new ServerErrors.EmailConformationNeeded())
+                    });
+
+                });
+
+            });
+
+        });
+    }
+
+    addAdminPassword(uname, email_token, password, callback) {
+        this.verifyEmailTokenAdmin(uname, email_token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+
+            let salt = Hash.generateSalt();
+            let hashedPassword = Hash.hashPlainText(password, salt);
+            DataBaseQueries.addAdminPassword(this.dbConn, uname, hashedPassword, salt, (result) => {
+                if (result !== true) {
+                    callback(result);
+                    return;
+                }
+                    
+                callback(true);
+            })
+        })
+    }
+
+    loginAdmin(uname, password, ip, callback) {
+        this.#authenticateAdmin(uname, password, (result) => {
+            if (result !== true) {
+                callback(new ServerErrors.InvalidLogin());
+                return;
+            }
+
+            DataBaseQueries.checkIpAdmin(this.dbConn, uname, ip, (result) => {
+                if (result) {
+                    this.#addNewTokenAdmin(uname, (result) => {
+                        if (result instanceof ServerErrors.ServerError) {
+                            callback(result);
+                            return;
+                        }
+                        
+                        callback(result);
+                        return;
+                    });
+                } else {
+                    DataBaseQueries.getEmailFromUnameAdmin(this.dbConn, uname, (result) => {
+                        if (result instanceof ServerErrors.ServerError) {
+                            callback(result);
+                            return;
+                        }
+
+                        let email = result;
+                        this.#addNewEmailTokenAdmin(uname, (result) => {
+                            if (result instanceof ServerErrors.ServerError) {
+                                callback(result);
+                                return;
+                            }
+
+                            let token = result;
+                            let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/adminConfirmIP?uname='+ uname + '&token=' + token + '&ip=' + ip + '">link</a> to verify the login.</p>'
+                            this.sendMail(email,'New login location detected','' , html, callback);
+                            callback(new ServerErrors.EmailConformationNeeded())
+                        });
+                    });
+                }
+            });
+
+        });
+    }
+
+    cancelAdminToken(uname, token, callback) {
+        this.verifyAdmin(uname, token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+            
+            DataBaseQueries.cancelAdminToken(this.dbConn, uname, (result) => {
+                callback(result);
+            });
+        });
+    }
+
+    confirmIpAdmin(uname, email_token, ip, callback) {
+        this.verifyEmailTokenAdmin(uname, email_token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+
+            DataBaseQueries.addIPAdmin(this.dbConn, uname, ip, (result) => {
+                if (result !== true) {
+                    callback(result);
+                    return;
+                }
+
+                callback(result);
+    
+            });
+        });
+    }
+
+    getAdminInfo(uname, token, callback) {
+        this.verifyAdmin(uname, token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+            
+            DataBaseQueries.getEmailFromUnameAdmin(this.dbConn, uname, (result) => {
+                if (result instanceof ServerErrors.ServerError) {
+                    callback(result);
+                    return;
+                }
+
+                let adminInfo = {
+                    "uname": uname,
+                    "email": result
+                };
+                callback(adminInfo);
+            });
+
+        });
+    }
+
+    updateAdmin(uname, new_uname, new_email, password, new_password, token, callback) {
+
+        this.verifyAdmin(uname, token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+            this.#authenticateAdmin(uname, password, (authentication_result) => {
+                DataBaseQueries.getAttributesForUpdateAdmin(this.dbConn, uname, (result) =>{
+                    if (result instanceof ServerErrors.ServerError) {
+                        callback(result);
+                        return;
+                    }
+                    console.log("auth " + authentication_result);
+                    
+                    let email;
+                    let hashed_pwd;
+                    let salt;
+                    try {
+                        email = result["email"];
+                        hashed_pwd = result["hashed_pwd"];
+                        salt = result["salt"];
+                    }
+                    catch (err) {
+                        callback(new ServerErrors.InternalServerError());
+                        return;
+                    }
+                    if (!new_uname) {
+                        new_uname = uname;
+                    }
+                    if (!new_email) {
+                        new_email = email;
+                    }
+    
+                    let new_hashed_pwd;
+                    if (!new_password || !password) {
+                        new_hashed_pwd = hashed_pwd;
+                    }
+                    else if (authentication_result !== true){
+                        callback(new ServerErrors.InvalidLogin());
+                        return;
+                    }
+                    else {
+                        new_hashed_pwd = Hash.hashPlainText(new_password, salt);
+                    }
+                    console.log(new_uname); 
+                    console.log(new_email);  
+                    console.log(new_hashed_pwd);
+    
+                    DataBaseQueries.updateAdmin(this.dbConn, uname, new_uname, new_email, new_hashed_pwd, (result) => {
+                        callback(result);
+                    });
+    
+                });
+
+            });
+        });
+    }
+
+    deleteAdmin(uname, admin_token, super_admin_uname, super_admin_token, callback) {
+        if (super_admin_uname && super_admin_token) {
+            this.#verifySuperAdmin(super_admin_uname, super_admin_token, (result) => {
+                if (result !== true) {
+                    callback(result);
+                    return;
+                }
+
+                DataBaseQueries.removeAdmin(this.dbConn, uname, (result) => {
+                    callback(result);
+                });
+            });
+        }
+        else {
+            this.verifyAdmin(uname, admin_token, (result) => {
+                if (result !== true) {
+                    callback(result);
+                    return;
+                }
+
+                DataBaseQueries.removeAdmin(this.dbConn, uname, (result) => {
+                    callback(result);
+                });
+            });
+        }
+    }
+
+    //--------------------
 
 }
 

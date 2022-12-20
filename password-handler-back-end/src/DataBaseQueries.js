@@ -195,6 +195,10 @@ class DataBaseQueries {
             }
             else {
                 try {
+                    if (result.length <= 0) {
+                        callback(new ServerErrors.InvalidToken());
+                        return;
+                    }
                     console.log("Number affected rows " + result.affectedRows);
                     let token = result[0]["email_token"];
                     console.log(token);
@@ -241,15 +245,38 @@ class DataBaseQueries {
     //     });
     // }
 
-    static addAdmin(dbConn, uname, email, hashedPassword, salt, callback) {
+    static addAdmin(dbConn, uname, email, callback) {
         var sql = "INSERT INTO `admins` VALUES ? ";
         var values = [
-            [uname, email, hashedPassword.toString("base64"), salt.toString("base64")]
+            [
+                uname, 
+                email, 
+                null, 
+                null,
+                null,
+                new Date(),
+                null,
+                new Date()]
         ];
         dbConn.query(sql, [values], (err, result) => {
             if (err) {
-                console.log(err);
-                callback(false);
+                if (err.errno === MysqlErrorCodes.ER_DUP_ENTRY) {
+                    const errWords = err.sqlMessage.split(" ");
+                    const fieldDB = errWords[5];
+                    
+                    if (fieldDB === "'admins.PRIMARY'") {
+                        callback(new ServerErrors.DuplicateUname());
+                        return;
+                    }
+                    if (fieldDB === "'admins.email'") {
+                        callback(new ServerErrors.DuplicateEmail());
+                        return;
+                    }
+                    callback(new ServerErrors.InternalServerError());
+                    return;
+                }
+                callback(new ServerErrors.InternalServerError());
+                return;
             }
             else {
                 console.log("Number affected rows " + result.affectedRows);
@@ -259,6 +286,253 @@ class DataBaseQueries {
 
     }
 
+    static addAdminPassword(dbConn, uname, hashedPassword, salt, callback) {
+        var sql = `UPDATE admins SET hashed_pwd="${hashedPassword.toString("base64")}", salt="${salt.toString("base64")}"  WHERE uname="${uname}"`;
+        
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                callback(new ServerErrors.InternalServerError());
+                return;
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(true);
+            }
+        });
+
+    }
+
+    static getAdminSalt(dbConn, uname, callback) {
+        var sql = `SELECT salt FROM admins WHERE admins.uname = "${uname}"`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(new ServerErrors.InternalServerError());
+            }
+            else {
+                try {
+                    console.log("Number affected rows " + result.affectedRows);
+                    result = Buffer.from(result[0]["salt"], "base64");
+                    callback(result);
+
+                }
+                catch (error) {
+                    callback(new ServerErrors.InternalServerError());
+                }
+
+
+            }
+        });
+    }
+
+    static getEmailFromUnameAdmin(dbConn, uname, callback){
+        var sql = `SELECT email FROM admins WHERE admins.uname = "${uname}"`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                callback(new ServerErrors.InternalServerError());
+                return;
+            }
+            try {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(result[0]["email"]);
+                return;
+
+            }
+            catch (error) {
+                callback(new ServerErrors.InternalServerError());
+                return;
+            }
+        });
+    }
+
+    static changeUserEmailTokenAdmin(dbConn, uname, token, callback){
+        var sql = `UPDATE admins SET email_token = "${token}", email_token_timestamp=CURRENT_TIMESTAMP() where uname = "${uname}"`
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(false);
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(true);
+            }
+        });
+    }
+
+    static cancelAdminEmailToken(dbConn, uname, callback){
+        var sql = `UPDATE admins SET email_token = NULL, admins.email_token_timestamp=CURRENT_TIMESTAMP() where admins.uname = "${uname}" `
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(false);
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(true);
+            }
+        });
+    }
+
+    static getAdminEmailToken(dbConn, uname, callback){
+        var sql = `SELECT email_token FROM admins WHERE admins.uname = "${uname}" AND CURRENT_TIMESTAMP() - email_token_timestamp < 3600`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(new ServerErrors.InvalidToken());
+            }
+            else {
+                try {
+                    if (result.length <= 0) {
+                        callback(new ServerErrors.InvalidToken());
+                        return;
+                    }
+                    console.log("Number affected rows " + result.affectedRows);
+                    let token = result[0]["email_token"];
+                    console.log(token);
+                    callback(token);
+
+                }
+                catch (error) {
+                    console.log(error);
+                    callback(new ServerErrors.InternalServerError());
+                }
+            }
+        });
+    }
+
+    static addIPAdmin(dbConn, uname, ip, callback) {
+        var sql = "INSERT INTO `admin_ips` VALUES ? ";
+        var values = [
+            [uname, ip]
+        ];
+        dbConn.query(sql, [values], (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(new ServerErrors.InternalServerError());
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(true);
+            }
+        });
+    }
+
+    static changeAdminToken(dbConn, uname, token, callback){
+        var sql = `UPDATE admins SET admins.token = "${token}", admins.token_timestamp=CURRENT_TIMESTAMP() where admins.uname = "${uname}" `
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(false);
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(true);
+            }
+        });
+    }
+
+    static cancelAdminToken(dbConn, uname, callback){
+        var sql = `UPDATE admins SET token = NULL, admins.token_timestamp=CURRENT_TIMESTAMP() where admins.uname = "${uname}" `
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(false);
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(true);
+            }
+        });
+    }
+
+    static getAdminToken(dbConn, uname, callback){
+        var sql = `SELECT token FROM admins WHERE admins.uname = "${uname}" AND CURRENT_TIMESTAMP() - admins.token_timestamp < 3600`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(new ServerErrors.InvalidToken());
+            }
+            else {
+                try {
+                    if (result.length <= 0) {
+                        callback(new ServerErrors.InvalidToken());
+                        return;
+                    }
+                    console.log("Number affected rows " + result.affectedRows);
+                    let token = result[0]["token"];
+                    console.log("token " +token);
+                    callback(token);
+
+                }
+                catch (error) {
+                    callback(new ServerErrors.InternalServerError());
+                }
+            }
+        });
+    }
+
+    static checkIpAdmin(dbConn, uname, ip, callback){
+        var sql = `SELECT ip FROM admin_ips WHERE admin_ips.uname = "${uname}" and admin_ips.ip = "${ip}"`;
+        
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                callback(new ServerErrors.InternalServerError());
+                return;
+            }
+            try{
+                if (result[0]["ip"] === ip) {
+                    callback(true);
+                }
+            }catch (error){
+                console.log("ip check false")
+                callback(false);
+    
+                
+            }
+            
+           
+        });
+    }
+
+    static updateAdmin(dbConn, uname, new_uname, new_email, new_hashed_pwd, callback) {
+        var sql = `UPDATE admins SET uname = "${new_uname}", email="${new_email}", hashed_pwd="${new_hashed_pwd.toString("base64")}" where uname = "${uname}" `
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(new ServerErrors.InternalServerError());
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(true);
+            }
+        });
+    }
+    static getAttributesForUpdateAdmin(dbConn, uname, callback) {
+        var sql = `SELECT email, hashed_pwd, salt FROM admins WHERE uname = "${uname}" `
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(new ServerErrors.InternalServerError());
+            }
+            else {
+                try {
+                    console.log("Number affected rows " + result.affectedRows);
+                    result = {
+                        "email": result[0]["email"],
+                        "hashed_pwd": Buffer.from(result[0]["hashed_pwd"], "base64"),
+                        "salt": Buffer.from(result[0]["salt"], "base64")
+                    }
+                    callback(result);
+
+                }
+                catch (err) {
+                    console.log(err);
+                    callback(new ServerErrors.InternalServerError());
+                }
+            }
+        });
+    }
+    
     static removeAdmin(dbConn, uname, callback) {
         var sql = "DELETE FROM admins WHERE admins.uname = ?";
         let name = uname;
@@ -269,6 +543,23 @@ class DataBaseQueries {
             }
             else {
                 console.log("Number affected rows " + result.affectedRows);
+                callback(true);
+            }
+        });
+    }
+
+    static isSuperAdmin(dbConn, uname, callback) {
+        var sql = `SELECT uname FROM super_admins WHERE uname = "${uname}" `
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(new ServerErrors.InternalServerError());
+            }
+            else {
+                if (result.length <= 0) {
+                    callback(false);
+                    return;
+                }
                 callback(true);
             }
         });
@@ -303,7 +594,7 @@ class DataBaseQueries {
         dbConn.query(sql, [values], (err, result) => {
             if (err) {
                 console.log(err);
-                callback(ServerErrors.InternalServerError());
+                callback(new ServerErrors.InternalServerError());
             }
             else {
                 console.log("Number affected rows " + result.affectedRows);
@@ -337,71 +628,6 @@ class DataBaseQueries {
             if (err) {
                 console.log(err);
                 callback(new ServerErrors.InternalServerError());
-            }
-            else {
-                console.log("Number affected rows " + result.affectedRows);
-                callback(true);
-            }
-        });
-    }
-
-    static addSuperAdmin(dbConn, uname, email, hashedPassword, salt, callback) {
-        var sql = "INSERT INTO `admins` VALUES ? ";
-        var sql2 = "INSERT INTO super_admins VALUES ?";
-        var values = [
-            [uname, email, hashedPassword.toString("base64"), salt.toString("base64")]
-        ];
-
-        var values2 = [
-            [uname]
-        ];
-        dbConn.query(sql, [values], (err, result) => {
-            if (err) {
-                console.log(err);
-                callback(false);
-            }
-            console.log("Number affected rows " + result.affectedRows);
-        });
-
-        dbConn.query(sql2, [values2], (err, result) => {
-            if (err) {
-                console.log(err);
-                callback(false);
-            }
-            else {
-                console.log("Number affected rows " + result.affectedRows);
-                callback(true);
-            }
-        });
-    }
-
-    static changePasswordSuperAdmin(dbConn, uname, new_hashedPassword, new_salt, callback) {
-        var uname = uname;
-        var hashedPassword = new_hashedPassword.toString("base64");
-        var salt = new_salt.toString("base64");
-        var sql = `UPDATE super_admins SET hashed_pwd = "${hashedPassword}", salt = "${salt}" WHERE super_admin.uname = "${uname}"`;
-        dbConn.query(sql, (err, result) => {
-            if (err) {
-                console.log(err);
-                callback(false);
-            }
-            else {
-                console.log("Number affected rows " + result.affectedRows);
-                callback(true);
-            }
-        });
-
-    }
-
-    static changePasswordAdmin(dbConn, uname, new_hashedPassword, new_salt, callback) {
-        var uname = uname;
-        var hashedPassword = new_hashedPassword.toString("base64");
-        var salt = new_salt.toString("base64");
-        var sql = `UPDATE admins SET hashed_pwd = "${hashedPassword}", salt = "${salt}" WHERE super_admin.uname = "${uname}"`;
-        dbConn.query(sql, (err, result) => {
-            if (err) {
-                console.log(err);
-                callback(false);
             }
             else {
                 console.log("Number affected rows " + result.affectedRows);
@@ -448,12 +674,18 @@ class DataBaseQueries {
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
-                callback(false);
+                callback(new ServerErrors.InternalServerError());
             }
             else {
-                console.log("Number affected rows " + result.affectedRows);
-                result[0]["hashed_pwd"] = Buffer.from(result[0]["hashed_pwd"], "base64");
-                callback(result);
+                try {
+                    console.log("Number affected rows " + result.affectedRows);
+                    result = Buffer.from(result[0]["hashed_pwd"], "base64");
+                    callback(result);
+
+                }
+                catch {
+                    callback(new ServerErrors.InternalServerError());
+                }
             }
         });
     }

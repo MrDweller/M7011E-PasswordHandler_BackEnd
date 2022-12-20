@@ -126,7 +126,7 @@ exports.deleteUser = function (uname, userToken) {
         return;
       }
       if (result instanceof ServerErrors.NotFound) {
-        reject(404);
+        reject(403);
         return;
       }
       if (result == false) {
@@ -165,7 +165,7 @@ exports.getUserByName = function (uname, userToken) {
         return;
       }
       if (result instanceof ServerErrors.NoRowsEffectedInDb) {
-        reject(404);
+        reject(403);
         return;
       }
 
@@ -208,7 +208,7 @@ exports.loginUser = function (body, uname) {
         return;
       }
       if (result instanceof ServerErrors.NotFound) {
-        reject(404);
+        reject(403);
         return;
       }
 
@@ -217,7 +217,7 @@ exports.loginUser = function (body, uname) {
         return;
       }
       console.log(result);
-      let userToken = {"user_token": result};
+      let userToken = {"user-token": result};
       resolve(userToken);
     });
 
