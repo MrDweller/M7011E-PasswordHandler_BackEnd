@@ -5,14 +5,14 @@
     },
     "databaseConnection" : {
         "host": "localhost",
-        "user": "localPasswordHandler",
-        "password": "qwerty",
+        "user": "root",
+        "password": "",
         "database": "password_handler"
     },
     "s3Config" : {
         "region" : "eu-north-1",
         "bucketName" : "passwordhandler",
         "access_key" : "AKIAXO64ZB7XVLNMSSAU",
-        "access_key_secret" : "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" 
+        "access_key_secret" : "" 
     }
 }
