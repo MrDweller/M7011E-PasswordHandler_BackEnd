@@ -561,7 +561,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserInfo'
+                $ref: '#/components/schemas/AdminInfo'
         "400":
           description: Bad request
         "403":
@@ -683,6 +683,43 @@ paths:
         "403":
           description: Invalid uname and token supplied
       x-swagger-router-controller: Admin
+  /admins:
+    get:
+      tags:
+      - admins
+      summary: get info about all admins
+      description: This gives all infor for all admins.
+      operationId: getAdmins
+      parameters:
+      - name: super-admin-uname
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: super-admin-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminInfo'
+                x-content-type: application/json
+        "400":
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
+      x-swagger-router-controller: Admins
 components:
   schemas:
     NewUser:
@@ -785,6 +822,23 @@ components:
         website_uname: john
         website_password: "12345"
         
+    AdminInfo:
+      type: object
+      properties:
+        uname:
+          type: string
+          example: john
+        email:
+          type: string
+          example: john@email.com
+        isSuperAdmin:
+          type: boolean
+          example: false
+      example:
+        uname: john
+        email: john@email.com
+        isSuperAdmin: false
+
     NewAdmin:
       type: object
       properties:

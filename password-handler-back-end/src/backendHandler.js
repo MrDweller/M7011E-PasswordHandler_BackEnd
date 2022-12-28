@@ -743,7 +743,7 @@ class BackEndManager {
                             callback(result);
                             return;
                         }
-                        let html = '<p>A new admin account has been created, kindly use this <a href="http://localhost:3000/passwordhandler/createAdmin?uname='+ uname + '&token=' + result + '">link</a> to complete the account.</p>'
+                        let html = '<p>A new admin account has been created, kindly use this <a href="http://localhost:3000/passwordhandler/admin/complete?uname='+ uname + '&token=' + result + '">link</a> to complete the account.</p>'
                         this.sendMail(email,'New admin created','' , html, callback);
                         callback(new ServerErrors.EmailConformationNeeded())
                     });
@@ -808,7 +808,7 @@ class BackEndManager {
                             }
 
                             let token = result;
-                            let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/adminConfirmIP?uname='+ uname + '&token=' + token + '&ip=' + ip + '">link</a> to verify the login.</p>'
+                            let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?uname='+ uname + '&admin-token=' + token + '&ip=' + ip + '">link</a> to verify the login.</p>'
                             this.sendMail(email,'New login location detected','' , html, callback);
                             callback(new ServerErrors.EmailConformationNeeded())
                         });
@@ -864,11 +864,24 @@ class BackEndManager {
                     return;
                 }
 
-                let adminInfo = {
-                    "uname": uname,
-                    "email": result
-                };
-                callback(adminInfo);
+                let email = result;
+
+                DataBaseQueries.isSuperAdmin(this.dbConn, uname, (result) => {
+                    if (result instanceof ServerErrors.ServerError) {
+                        callback(result);
+                        return;
+                    }
+
+                    let isSuperAdmin = result;
+
+                    let adminInfo = {
+                        "uname": uname,
+                        "email": email,
+                        "isSuperAdmin": isSuperAdmin
+                    };
+                    callback(adminInfo);
+                });
+
             });
 
         });
@@ -958,6 +971,46 @@ class BackEndManager {
                 });
             });
         }
+    }
+
+    getAdmins(super_admin_uname, super_admin_token, callback) {
+        this.#verifySuperAdmin(super_admin_uname, super_admin_token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+
+            DataBaseQueries.getAllAdmins(this.dbConn, (result) => {
+                if (result instanceof ServerErrors.ServerError) {
+                    callback(result);
+                    return;
+                }
+
+                this.#allAdminsAddIsSuperAdmin(0, result, (result) => {
+                    callback(result);
+
+                })
+            });
+
+        });
+    }
+
+    #allAdminsAddIsSuperAdmin(index, admins, callback){
+        DataBaseQueries.isSuperAdmin(this.dbConn, admins[index]["uname"], (result) => {
+            if (result instanceof ServerErrors.ServerError){
+                reject();
+                return;
+            }
+
+            admins[index]["isSuperAdmin"] = result;
+            console.log(admins);
+            let nextIndex = index + 1;
+            if (nextIndex >= admins.length) {
+                callback(admins);
+                return;
+            }
+            this.#allAdminsAddIsSuperAdmin(nextIndex, admins, callback);
+        });
     }
 
     //--------------------

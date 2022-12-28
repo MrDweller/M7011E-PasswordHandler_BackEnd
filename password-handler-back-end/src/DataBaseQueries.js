@@ -709,7 +709,7 @@ class DataBaseQueries {
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
-                callback(false);
+                callback(ServerErrors.InternalServerError());e
             }
             else {
                 console.log("Number affected rows " + result.affectedRows);
