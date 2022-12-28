@@ -7,9 +7,14 @@ const TokenGenerator = require('./tokenGenerator');
 const fs = require('fs');
 const MySQL = require('mysql');
 const DataBaseQueries = require('./DataBaseQueries');
-const { response } = require('express');
+const { response, json } = require('express');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const multer = require('multer');
+const multerS3 = require('multer-s3');
+const aws = require('aws-sdk');
+const { url } = require('inspector');
+
 
 class BackEndManager {
     constructor() {
@@ -352,6 +357,86 @@ class BackEndManager {
         })
         // TODO: Generate a token and send an email conformation request
         //this.sendMail(new_email, )
+    }
+
+    uploadPFP(jsonData, callback){
+
+
+        
+        let token = jsonData["token"];
+        DataBaseQueries.getPFPIDfromToken(this.dbConn, token, (pfpid) => {
+           
+            if (pfpid === null) {
+                callback(null);
+                return;
+            }
+            DataBaseQueries.addPFPURLfromToken(this.dbConn, token, pfpid , (status) => {
+                let config = JSON.parse(fs.readFileSync("./src/config.json"));
+                if (status) {
+                    console.log("dis is pfpid once again: " + pfpid);
+                    config["databaseConnection"]["host"];
+                    const region = config["s3Config"]["region"];
+                    const bucketName = config["s3Config"]["bucketName"];
+                    const accessKeyId = config["s3Config"]["access_key"];
+
+                    const secretAccessKey = config["s3Config"]["access_key_secret"];
+                    
+        
+        
+                    const s3 = new aws.S3({
+                        region,
+                        accessKeyId,
+                        secretAccessKey,
+                        signatureVersion: 'v4'
+                        
+
+                    })
+                    const imageName = pfpid;
+                    const params = ({
+                    Bucket: bucketName,
+                    Key: imageName
+                    })
+                    console.log("did i get there?")
+                    const uploadURL = s3.getSignedUrlPromise('putObject', params).then(
+                        (url) => {
+                            callback(url)
+                        }
+                    )
+                    return;
+                }else{
+                    console.log("error in upload");
+                    callback(false)
+                    return;
+                }
+                
+    
+                
+                
+                
+            })
+
+        })
+
+        
+
+        
+    }
+
+    getPFPURL(jsonData, callback){
+        let token = jsonData["token"];
+        DataBaseQueries.getPFPURLfromToken(this.dbConn, token, (pfpURL) => {
+            console.log("this is my last resort: " + pfpURL)
+            if (pfpURL === false) {
+                callback(false);
+                return;
+            }
+            
+            callback(pfpURL);
+            
+        })
+
+        
+        
     }
 
     #verifyEmail(uname, email, callback) {

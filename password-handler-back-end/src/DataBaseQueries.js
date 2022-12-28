@@ -15,7 +15,10 @@ class DataBaseQueries {
                 TokenGenerator.generateToken(20, true),
                 null,
                 null,
-                null]
+                null, 
+                TokenGenerator.generateToken(20,true),
+                "https://passwordhandler.s3.eu-north-1.amazonaws.com/user_tab.png"
+            ]
         ];
         dbConn.query(sql, [values], (err, result) => {
             if (err) {
@@ -99,7 +102,7 @@ class DataBaseQueries {
     }
 
     static getUnameFromToken(dbConn, token, callback){
-        var sql = `SELECT uname FROM users WHERE users.token = "${token}" AND CURRENT_TIMESTAMP() - token_timestamp < 60`;
+        var sql = `SELECT uname FROM users WHERE users.token = "${token}" AND CURRENT_TIMESTAMP() - token_timestamp < 1000000`;
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
@@ -162,6 +165,70 @@ class DataBaseQueries {
                 catch (error) {
                     callback(null);
                 }
+            }
+        });
+    }
+
+    static getPFPURLfromToken(dbConn, token, callback){
+        var sql = `SELECT pfpURL FROM users WHERE users.token = "${token}"`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(null);
+            }
+            else {
+                try {
+                    console.log("Number affected rows " + result.affectedRows);
+                    let pfpURL = result[0]["pfpURL"];
+                    console.log("no breathing: " + pfpURL);
+                    callback(pfpURL);
+                    
+
+                }
+                catch (error) {
+                    console.log("suffocation")
+                    callback(null);
+                }
+            }
+        });
+    }
+
+    static getPFPIDfromToken(dbConn, token, callback){
+        var sql = `SELECT pfpid FROM users WHERE users.token = "${token}"`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(null);
+            }
+            else {
+                try {
+                    console.log("Number affected rows " + result.affectedRows);
+                    let pfpid = result[0]["pfpid"];
+                    console.log(pfpid);
+                    callback(pfpid);
+
+                }
+                catch (error) {
+                    callback(null);
+                }
+            }
+        });
+    }
+
+
+    static addPFPURLfromToken(dbConn, token, pfpid, callback){
+        
+        var sql = `UPDATE users SET pfpURL = "https://passwordhandler.s3.eu-north-1.amazonaws.com/${pfpid}" where token = "${token}" `
+        dbConn.query(sql, (err, result) => {
+            console.log("result from addpfpidfromtoken: " + result);
+            if (err) {
+                console.log("errrorpfpid")
+                console.log(err);
+                callback(false);
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(true);
             }
         });
     }
@@ -286,6 +353,7 @@ class DataBaseQueries {
     }
 
     static addIP(dbConn, uname, ip, callback) {
+        TokenGenerator.ge
         var sql = "INSERT INTO `ips` VALUES ? ";
         var values = [
             [uname, ip]

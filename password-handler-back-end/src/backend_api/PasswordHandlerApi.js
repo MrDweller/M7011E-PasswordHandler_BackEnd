@@ -49,6 +49,53 @@ class PasswordHandlerApi {
             }
         });
 
+        this.expressApi.post('/uploadPFP', function (request, response) {
+            try {
+                console.log("request.body: " + request.body);
+
+                
+                backEndHandler.uploadPFP(request.body, (data) => {
+                    console.log("uploadPFP DATA: " + data);
+                    console.log("below uploadPFP DATA");
+                    console.log("response: " + response)
+                    let responseBody = {};
+                    responseBody["status"] = data;
+                    backEndHandler.getPFPURL(request.body, (pfpURL) => {
+                        responseBody["pfpURL"] = pfpURL
+                        response.status(200).send(responseBody);
+                    })
+
+                    
+                });
+                 
+            } catch (error) {
+                console.log(error);
+                response.status(400).end();
+            }
+
+        });
+
+        this.expressApi.post('/getPFP', function (request, response) {
+            try {
+                console.log("request.body: " + request.body);
+
+                
+                backEndHandler.getPFPURL(request.body, (data) => {
+                    
+                    let responseBody = {};
+                    responseBody["status"] = data;
+                    console.log("response from getPFPURL in PasswordHandlerAPI = " + responseBody["status"]);
+
+                    response.status(200).send(responseBody);
+                });
+                 
+            } catch (error) {
+                console.log(error);
+                response.status(400).end();
+            }
+
+        });
+
         this.expressApi.post('/user', function (request, response) {
             try {
                 console.log("request.body: " + request.body);
