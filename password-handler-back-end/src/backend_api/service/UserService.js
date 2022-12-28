@@ -330,3 +330,53 @@ exports.getUname = function(identification) {
 
   });
 }
+
+exports.uploadPFP = function(uname, user_token) {
+  return new Promise(function (resolve, reject) {
+    backEndHandler.uploadPFP(uname, user_token, (result) => {
+      if (result instanceof ServerErrors.InternalServerError) {
+        reject(500);
+        return;
+      }
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(403);
+        return;
+      }
+  
+      if (result instanceof ServerErrors.ServerError) {
+        reject(500);
+        return;
+      }
+
+      resolve(result);
+    });
+
+  });
+}
+
+exports.getPFP = function(uname, user_token) {
+  return new Promise(function (resolve, reject) {
+    backEndHandler.getPFP(uname, user_token, (result) => {
+      console.log(result);
+      if (result instanceof ServerErrors.InternalServerError) {
+        reject(500);
+        return;
+      }
+      if (result instanceof ServerErrors.InvalidToken) {
+        reject(403);
+        return;
+      }
+  
+      if (result instanceof ServerErrors.ServerError) {
+        reject(500);
+        return;
+      }
+  
+      let response = {
+        "pfpURL": result
+      }
+      resolve(response);
+    });
+
+  });
+}

@@ -84,3 +84,23 @@ module.exports.updateUser = function updateUser (req, res, next, body, uname, us
       utils.writeErrorCode(res, response);
     });
 };
+
+module.exports.uploadPFP = function uploadPFP (req, res, next, uname, user_token) {
+  User.uploadPFP(uname, user_token)
+    .then(function (response) {
+      utils.writeJson(res, response);
+    })
+    .catch(function (response) {
+      utils.writeErrorCode(res, response);
+    });
+};
+
+module.exports.getPFP = function getPFP (req, res, next, uname, user_token) {
+  User.getPFP(uname, user_token)
+    .then(function (response) {
+      utils.writeJson(res, response);
+    })
+    .catch(function (response) {
+      utils.writeErrorCode(res, response);
+    });
+};

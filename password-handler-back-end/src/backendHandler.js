@@ -95,14 +95,12 @@ class BackEndManager {
 
         try {
             DataBaseQueries.addUser(this.dbConn, uname, email, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, ivKey, (result) => {
-                if (result instanceof ServerErrors.ServerError)
-                {
+                if (result instanceof ServerErrors.ServerError) {
                     callback(result);
                     return;
                 }
                 DataBaseQueries.addIP(this.dbConn, uname, userIP, (result) => {
-                    if (result instanceof ServerErrors.ServerError)
-                    {
+                    if (result instanceof ServerErrors.ServerError) {
                         callback(result);
                         return;
                     }
@@ -116,14 +114,14 @@ class BackEndManager {
         }
     }
 
-    addIPtoDB(uname, emailToken, userIP, callback){
+    addIPtoDB(uname, emailToken, userIP, callback) {
         // let userIP = jsonData["userIP"];
         // let token = jsonData["token"];
         console.log("token: " + emailToken);
         console.log("ip: " + userIP);
         this.verifyEmailToken(uname, emailToken, (result) => {
             console.log("tokenDb: " + result);
-            
+
             if (result instanceof ServerErrors.ServerError) {
                 callback(result);
                 return;
@@ -133,9 +131,9 @@ class BackEndManager {
                 return;
             }
             DataBaseQueries.addIP(this.dbConn, uname, userIP, (result) => {
-                if(result === true){
+                if (result === true) {
                     callback(true)
-                }else{
+                } else {
                     callback(false)
                 }
             });
@@ -152,11 +150,11 @@ class BackEndManager {
                 callback(new ServerErrors.InternalServerError());
                 return;
             }
-            
+
             DataBaseQueries.removeUser(this.dbConn, uname, (result) => {
                 callback(result);
             });
-            
+
         });
     }
 
@@ -170,7 +168,7 @@ class BackEndManager {
                 callback(new ServerErrors.InternalServerError());
                 return;
             }
-            
+
             DataBaseQueries.getEmailFromUname(this.dbConn, uname, (result) => {
                 if (result instanceof ServerErrors.ServerError) {
                     callback(result);
@@ -260,8 +258,8 @@ class BackEndManager {
                                     callback(new ServerErrors.InternalServerError());
                                     return;
                                 }
-                                let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?uname='+ uname + '&token=' + token + '&ip=' + userIP + '">link</a> to verify the login.</p>'
-                                this.sendMail(email,'New login location detected','' , html, callback);
+                                let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?uname=' + uname + '&token=' + token + '&ip=' + userIP + '">link</a> to verify the login.</p>'
+                                this.sendMail(email, 'New login location detected', '', html, callback);
                                 callback(new ServerErrors.EmailConformationNeeded())
                             });
                         });
@@ -287,14 +285,14 @@ class BackEndManager {
                 callback(new ServerErrors.InternalServerError());
                 return;
             }
-            
+
             DataBaseQueries.cancelUserToken(this.dbConn, uname, (result) => {
                 callback(result);
             });
         });
     }
 
-    #addNewToken(uname, callback){
+    #addNewToken(uname, callback) {
         let newToken = TokenGenerator.generateToken(20, true);
         DataBaseQueries.changeUserToken(this.dbConn, uname, newToken, (result) => {
             if (result) {
@@ -338,7 +336,7 @@ class BackEndManager {
                 callback(result);
             });
         });
-       
+
 
     }
 
@@ -411,7 +409,7 @@ class BackEndManager {
                 callback(new ServerErrors.InternalServerError());
                 return;
             }
-            
+
             DataBaseQueries.changeUname(this.dbConn, uname, new_uname, (result) => {
                 callback(result);
             })
@@ -431,34 +429,44 @@ class BackEndManager {
                 callback(new ServerErrors.InternalServerError());
                 return;
             }
-            
+
             this.#verifyEmail(uname, new_email, (err) => {
-                if(err) {
+                if (err) {
                     callback(false);
                     return;
                 }
                 callback(true);
-                
+
 
             });
 
         })
     }
 
-    uploadPFP(jsonData, callback){
-
-
-        
-        let token = jsonData["token"];
-        DataBaseQueries.getPFPIDfromToken(this.dbConn, token, (pfpid) => {
-           
-            if (pfpid === null) {
-                callback(null);
+    uploadPFP(uname, token, callback) {
+        this.verifyUser(uname, token, (result) => {
+            console.log(result);
+            if (result != true) {
+                callback(result);
                 return;
             }
-            DataBaseQueries.addPFPURLfromToken(this.dbConn, token, pfpid , (status) => {
-                let config = JSON.parse(fs.readFileSync("./src/config.json"));
-                if (status) {
+            DataBaseQueries.getPFPID(this.dbConn, uname, (result) => {
+                console.log(result);
+
+
+                if (result instanceof ServerErrors.ServerError) {
+                    callback(result);
+                    return;
+                }
+                let pfpid = result;
+                DataBaseQueries.addPFPURL(this.dbConn, uname, pfpid, (result) => {
+                    console.log(result);
+                    if (result !== true) {
+                        callback(result);
+                        return;
+                    }
+
+                    let config = JSON.parse(fs.readFileSync("./src/config.json"));
                     console.log("dis is pfpid once again: " + pfpid);
                     config["databaseConnection"]["host"];
                     const region = config["s3Config"]["region"];
@@ -466,63 +474,64 @@ class BackEndManager {
                     const accessKeyId = config["s3Config"]["access_key"];
 
                     const secretAccessKey = config["s3Config"]["access_key_secret"];
-                    
-        
-        
+
                     const s3 = new aws.S3({
                         region,
                         accessKeyId,
                         secretAccessKey,
                         signatureVersion: 'v4'
-                        
 
-                    })
+                    });
+
                     const imageName = pfpid;
                     const params = ({
-                    Bucket: bucketName,
-                    Key: imageName
-                    })
-                    console.log("did i get there?")
-                    const uploadURL = s3.getSignedUrlPromise('putObject', params).then(
-                        (url) => {
-                            callback(url)
-                        }
-                    )
-                    return;
-                }else{
-                    console.log("error in upload");
-                    callback(false)
-                    return;
-                }
-                
-    
-                
-                
-                
+                        Bucket: bucketName,
+                        Key: imageName
+                    });
+
+                    const uploadURL = s3.getSignedUrlPromise('putObject', params)
+                        .then((url) => {
+                                this.getPFP(uname, token, (result) => {
+                                    if (result instanceof ServerErrors.ServerError) {
+                                        callback(result);
+                                        return;
+                                    }
+                                    let jsonObjet = {
+                                        pfp: url,
+                                        pfpURL: result
+                                    }
+                                    callback(jsonObjet);
+
+                                })
+                            }
+                        )
+                        .catch(
+                            () => {
+                                callback(new ServerErrors.InternalServerError());
+
+                            }
+                        )
+
+                })
+
             })
+        });
 
-        })
-
-        
-
-        
     }
 
-    getPFPURL(jsonData, callback){
-        let token = jsonData["token"];
-        DataBaseQueries.getPFPURLfromToken(this.dbConn, token, (pfpURL) => {
-            console.log("this is my last resort: " + pfpURL)
-            if (pfpURL === false) {
-                callback(false);
+    getPFP(uname, token, callback) {
+        this.verifyUser(uname, token, (result) => {
+            if (result != true) {
+                callback(result);
                 return;
             }
-            
-            callback(pfpURL);
-            
-        })
+        
+            DataBaseQueries.getPFPURL(this.dbConn, uname, (result) => {
+                callback(result);
+    
+            });
+        });
 
-        
-        
     }
 
     #verifyEmail(uname, email, callback) {
@@ -547,7 +556,7 @@ class BackEndManager {
                 callback(new ServerErrors.InternalServerError());
                 return;
             }
-            
+
             this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
                 if (result !== true) {
                     callback(null);
@@ -583,7 +592,7 @@ class BackEndManager {
                 callback(new ServerErrors.InternalServerError());
                 return;
             }
-            
+
             this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
                 if (result !== true) {
                     callback(new ServerErrors.WrongMasterPassword());
@@ -751,7 +760,7 @@ class BackEndManager {
             }
 
             DataBaseQueries.cancelAdminEmailToken(this.dbConn, uname, (result) => {
-                if (result){
+                if (result) {
                     console.log("Admin email token has been canceled");
 
                 }
@@ -763,7 +772,7 @@ class BackEndManager {
         });
     }
 
-    #addNewTokenAdmin(uname, callback){
+    #addNewTokenAdmin(uname, callback) {
         let newToken = TokenGenerator.generateToken(20, true);
         DataBaseQueries.changeAdminToken(this.dbConn, uname, newToken, (result) => {
             if (result) {
@@ -828,8 +837,8 @@ class BackEndManager {
                             callback(result);
                             return;
                         }
-                        let html = '<p>A new admin account has been created, kindly use this <a href="http://localhost:3000/passwordhandler/admin/complete?uname='+ uname + '&token=' + result + '">link</a> to complete the account.</p>'
-                        this.sendMail(email,'New admin created','' , html, callback);
+                        let html = '<p>A new admin account has been created, kindly use this <a href="http://localhost:3000/passwordhandler/admin/complete?uname=' + uname + '&token=' + result + '">link</a> to complete the account.</p>'
+                        this.sendMail(email, 'New admin created', '', html, callback);
                         callback(new ServerErrors.EmailConformationNeeded())
                     });
 
@@ -854,7 +863,7 @@ class BackEndManager {
                     callback(result);
                     return;
                 }
-                    
+
                 callback(true);
             })
         })
@@ -874,7 +883,7 @@ class BackEndManager {
                             callback(result);
                             return;
                         }
-                        
+
                         callback(result);
                         return;
                     });
@@ -893,8 +902,8 @@ class BackEndManager {
                             }
 
                             let token = result;
-                            let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?uname='+ uname + '&admin-token=' + token + '&ip=' + ip + '">link</a> to verify the login.</p>'
-                            this.sendMail(email,'New login location detected','' , html, callback);
+                            let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?uname=' + uname + '&admin-token=' + token + '&ip=' + ip + '">link</a> to verify the login.</p>'
+                            this.sendMail(email, 'New login location detected', '', html, callback);
                             callback(new ServerErrors.EmailConformationNeeded())
                         });
                     });
@@ -910,7 +919,7 @@ class BackEndManager {
                 callback(result);
                 return;
             }
-            
+
             DataBaseQueries.cancelAdminToken(this.dbConn, uname, (result) => {
                 callback(result);
             });
@@ -931,7 +940,7 @@ class BackEndManager {
                 }
 
                 callback(result);
-    
+
             });
         });
     }
@@ -942,7 +951,7 @@ class BackEndManager {
                 callback(result);
                 return;
             }
-            
+
             DataBaseQueries.getEmailFromUnameAdmin(this.dbConn, uname, (result) => {
                 if (result instanceof ServerErrors.ServerError) {
                     callback(result);
@@ -980,13 +989,13 @@ class BackEndManager {
                 return;
             }
             this.#authenticateAdmin(uname, password, (authentication_result) => {
-                DataBaseQueries.getAttributesForUpdateAdmin(this.dbConn, uname, (result) =>{
+                DataBaseQueries.getAttributesForUpdateAdmin(this.dbConn, uname, (result) => {
                     if (result instanceof ServerErrors.ServerError) {
                         callback(result);
                         return;
                     }
                     console.log("auth " + authentication_result);
-                    
+
                     let email;
                     let hashed_pwd;
                     let salt;
@@ -1005,26 +1014,26 @@ class BackEndManager {
                     if (!new_email) {
                         new_email = email;
                     }
-    
+
                     let new_hashed_pwd;
                     if (!new_password || !password) {
                         new_hashed_pwd = hashed_pwd;
                     }
-                    else if (authentication_result !== true){
+                    else if (authentication_result !== true) {
                         callback(new ServerErrors.InvalidLogin());
                         return;
                     }
                     else {
                         new_hashed_pwd = Hash.hashPlainText(new_password, salt);
                     }
-                    console.log(new_uname); 
-                    console.log(new_email);  
+                    console.log(new_uname);
+                    console.log(new_email);
                     console.log(new_hashed_pwd);
-    
+
                     DataBaseQueries.updateAdmin(this.dbConn, uname, new_uname, new_email, new_hashed_pwd, (result) => {
                         callback(result);
                     });
-    
+
                 });
 
             });
@@ -1080,9 +1089,9 @@ class BackEndManager {
         });
     }
 
-    #allAdminsAddIsSuperAdmin(index, admins, callback){
+    #allAdminsAddIsSuperAdmin(index, admins, callback) {
         DataBaseQueries.isSuperAdmin(this.dbConn, admins[index]["uname"], (result) => {
-            if (result instanceof ServerErrors.ServerError){
+            if (result instanceof ServerErrors.ServerError) {
                 reject();
                 return;
             }

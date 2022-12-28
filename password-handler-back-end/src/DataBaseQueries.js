@@ -216,39 +216,40 @@ class DataBaseQueries {
         });
     }
 
-    static getPFPURLfromToken(dbConn, token, callback){
-        var sql = `SELECT pfpURL FROM users WHERE users.token = "${token}"`;
+    static getPFPURL(dbConn, uname, callback){
+        var sql = `SELECT pfpURL FROM users WHERE users.uname = "${uname}"`;
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
-                callback(null);
+                callback(new ServerErrors.InternalServerError());
             }
             else {
                 try {
                     console.log("Number affected rows " + result.affectedRows);
                     let pfpURL = result[0]["pfpURL"];
-                    console.log("no breathing: " + pfpURL);
+                    console.log("pfpURL "+ pfpURL);
                     callback(pfpURL);
                     
 
                 }
                 catch (error) {
-                    console.log("suffocation")
-                    callback(null);
+                    console.log(error)
+                    callback(new ServerErrors.InternalServerError());
                 }
             }
         });
     }
 
-    static getPFPIDfromToken(dbConn, token, callback){
-        var sql = `SELECT pfpid FROM users WHERE users.token = "${token}"`;
+    static getPFPID(dbConn, uname, callback){
+        var sql = `SELECT pfpid FROM users WHERE users.uname = "${uname}"`;
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
-                callback(null);
+                callback(new ServerErrors.InternalServerError());
             }
             else {
                 try {
+                    console.log(result);
                     console.log("Number affected rows " + result.affectedRows);
                     let pfpid = result[0]["pfpid"];
                     console.log(pfpid);
@@ -256,25 +257,28 @@ class DataBaseQueries {
 
                 }
                 catch (error) {
-                    callback(null);
+                    callback(new ServerErrors.InternalServerError());
                 }
             }
         });
     }
 
 
-    static addPFPURLfromToken(dbConn, token, pfpid, callback){
+    static addPFPURL(dbConn, uname, pfpid, callback){
         
-        var sql = `UPDATE users SET pfpURL = "https://passwordhandler.s3.eu-north-1.amazonaws.com/${pfpid}" where token = "${token}" `
+        var sql = `UPDATE users SET pfpURL = "https://passwordhandler.s3.eu-north-1.amazonaws.com/${pfpid}" where uname = "${uname}" `
         dbConn.query(sql, (err, result) => {
             console.log("result from addpfpidfromtoken: " + result);
             if (err) {
-                console.log("errrorpfpid")
                 console.log(err);
-                callback(false);
+                callback(new ServerErrors.InternalServerError());
             }
             else {
                 console.log("Number affected rows " + result.affectedRows);
+                if (result.affectedRows <= 0){
+                    callback(new ServerErrors.InternalServerError());
+                    return;
+                }
                 callback(true);
             }
         });
