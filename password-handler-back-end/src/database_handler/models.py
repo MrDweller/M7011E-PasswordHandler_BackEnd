@@ -14,6 +14,9 @@ class Admins(models.Model):
     hashed_pwd = models.CharField(max_length=128)
     salt = models.CharField(max_length=128)
     token = models.CharField(max_length=256)
+    token_timestamp = models.DateTimeField()
+    email_token = models.CharField(max_length=256)
+    email_token_timestamp = models.CharField(max_length=256)
 
     class Meta:
         managed = False
@@ -23,7 +26,6 @@ class Admins(models.Model):
 class AdminsApi(models.Model):
     uname = models.CharField(primary_key=True, max_length=128)
     email = models.CharField(unique=True, max_length=128)
-    ip = models.CharField(max_length=128)
 
 
 class Feedback(models.Model):
@@ -48,6 +50,17 @@ class Ips(models.Model):
         db_table = 'ips'
         constraints = [
             models.UniqueConstraint(fields=['uname', 'ip'], name='unique_constraint')
+        ]
+
+class AdminsIps(models.Model):
+    uname = models.ForeignKey('Admins', models.DO_NOTHING, db_column='uname')
+    ip = models.CharField(max_length=128)
+
+    class Meta:
+        managed = False
+        db_table = 'admin_ips'
+        constraints = [
+            models.UniqueConstraint(fields=['uname', 'ip'], name='unique_constraint_admins')
         ]
 
 
@@ -98,6 +111,8 @@ class Users(models.Model):
     token_timestamp = models.DateTimeField()
     email_token = models.CharField(max_length=256)
     email_token_timestamp = models.CharField(max_length=256)
+    pfpid = models.CharField(max_length=128)
+    pfpURL =models.CharField(max_length=128)
 
     class Meta:
         managed = False
@@ -152,3 +167,6 @@ class WebsitePasswordApi(models.Model):
     website_url = models.CharField(max_length=128)
     website_uname = models.CharField(max_length=128)
     website_password = models.CharField(max_length=256)
+
+class WriteAdminPasswordApi(models.Model):
+    password = models.CharField(max_length=128)

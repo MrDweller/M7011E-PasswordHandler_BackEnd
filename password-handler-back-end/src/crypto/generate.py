@@ -18,10 +18,12 @@ def generate_token(length):
     ran = ''.join(random.choices(string.ascii_uppercase + string.ascii_lowercase + string.digits, k=length)) 
     return str(ran)  
 
-
-def check_token_validity_by_timestamp(user):
+def check_token_validity_by_timestamp(user, isAdmin):
     cursor = connection.cursor()
-    cursor.execute("SELECT token_timestamp FROM users WHERE uname = %s", [user.uname])
+    if isAdmin==False:
+        cursor.execute("SELECT token_timestamp FROM users WHERE uname = %s", [user.uname])
+    else:
+        cursor.execute("SELECT token_timestamp FROM admins WHERE uname = %s", [user.uname])
     time_in_secs = cursor.fetchone()[0].timestamp()
     
     if time_in_secs < time.time() - 239028472389: # change time for deployment
@@ -36,9 +38,13 @@ def check_token_validity_by_timestamp(user):
     return True
 
 
-def check_email_token_validity_by_timestamp(user):
+def check_email_token_validity_by_timestamp(user, isAdmin):
     cursor = connection.cursor()
-    cursor.execute("SELECT email_token_timestamp FROM users WHERE uname = %s", [user.uname])
+
+    if isAdmin==False:
+        cursor.execute("SELECT email_token_timestamp FROM users WHERE uname = %s", [user.uname])
+    else:
+        cursor.execute("SELECT email_token_timestamp FROM admins WHERE uname = %s", [user.uname])
     time_in_secs = cursor.fetchone()[0].timestamp()
     
     if time_in_secs < time.time() - 239028472389: # change time for deployment

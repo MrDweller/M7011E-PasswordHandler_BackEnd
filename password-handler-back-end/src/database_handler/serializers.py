@@ -10,7 +10,7 @@ class UserApiSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = Users
-        fields = ["uname", "email", "hashedhashed_masterpwd", "salt_1", "salt_2", "encrypted_key", "iv"]
+        fields = ["uname", "email", "hashedhashed_masterpwd", "salt_1", "salt_2", "encrypted_key", "iv", "pfpid", "pfpURL"]
 
 
 class UsersSerializer(serializers.ModelSerializer):
@@ -40,7 +40,7 @@ class ChangeEmailApiSerializer(serializers.ModelSerializer):
 class AdminsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Admins
-        fields = ["uname", "email", "hashed_pwd", "salt"]
+        fields = ["uname", "email"]
 
 class AdminSerializer(serializers.ModelSerializer):
     class Meta:
@@ -51,7 +51,7 @@ class AdminSerializer(serializers.ModelSerializer):
 class AdminsSerializerApi(serializers.ModelSerializer):
     class Meta:
         model = AdminsApi
-        fields = ["uname", "email", "ip"]
+        fields = ["uname", "email"]
 
 
 class SuperAdminsSerializer(serializers.ModelSerializer):
@@ -75,6 +75,11 @@ class FeedbackSerializer(serializers.ModelSerializer):
 class IpsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ips
+        fields = ["uname", "ip"]
+
+class AdminsIpsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdminsIps
         fields = ["uname", "ip"]
 
 
@@ -173,4 +178,9 @@ class GetPasswordApiSerializer(serializers.ModelSerializer):
     class Meta:
         model = WebsitePasswordApi
         fields = ["website_uname", "website_url", "website_password"]
+
+class WriteAdminPasswordApiSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WriteAdminPasswordApi
+        fields = ["password"]
 
