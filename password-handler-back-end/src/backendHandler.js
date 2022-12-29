@@ -140,22 +140,37 @@ class BackEndManager {
         });
     }
 
-    removeUser(uname, token, callback) {
-        this.verifyUser(uname, token, (result) => {
-            if (result instanceof ServerErrors.ServerError) {
-                callback(result);
-                return;
-            }
-            if (result !== true) {
-                callback(new ServerErrors.InternalServerError());
-                return;
-            }
+    removeUser(uname, token, admin_uname, admin_token, callback) {
+        if (admin_uname && admin_token) {
+            this.verifyAdmin(admin_uname, admin_token, (result) => {
+                if (result !== true) {
+                    callback(result);
+                    return;
+                }
 
-            DataBaseQueries.removeUser(this.dbConn, uname, (result) => {
-                callback(result);
+                DataBaseQueries.removeUser(this.dbConn, uname, (result) => {
+                    callback(result);
+                });
+            });
+        }
+        else {
+            this.verifyUser(uname, token, (result) => {
+                if (result instanceof ServerErrors.ServerError) {
+                    callback(result);
+                    return;
+                }
+                if (result !== true) {
+                    callback(new ServerErrors.InternalServerError());
+                    return;
+                }
+    
+                DataBaseQueries.removeUser(this.dbConn, uname, (result) => {
+                    callback(result);
+                });
+    
             });
 
-        });
+        }
     }
 
     getUserInfo(uname, token, callback) {
@@ -183,6 +198,20 @@ class BackEndManager {
                     "email": result
                 };
                 callback(userInfo);
+            });
+
+        });
+    }
+
+    getUsers(admin_uname, admin_token, callback) {
+        this.verifyAdmin(admin_uname, admin_token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+
+            DataBaseQueries.getAllUsers(this.dbConn, (result) => {
+                callback(result);
             });
 
         });
@@ -814,7 +843,7 @@ class BackEndManager {
 
     }
 
-    createAdmin(super_admin_uname, super_admin_token, uname, email, ip, callback) {
+    createAdmin(super_admin_uname, super_admin_token, uname, email, callback) {
         this.#verifySuperAdmin(super_admin_uname, super_admin_token, (result) => {
             if (result !== true) {
                 callback(result);
@@ -826,22 +855,15 @@ class BackEndManager {
                     callback(result);
                     return;
                 }
-                DataBaseQueries.addIPAdmin(this.dbConn, uname, ip, (result) => {
-                    if (result !== true) {
+
+                this.#addNewEmailTokenAdmin(uname, (result) => {
+                    if (result instanceof ServerErrors.ServerError) {
                         callback(result);
                         return;
                     }
-
-                    this.#addNewEmailTokenAdmin(uname, (result) => {
-                        if (result instanceof ServerErrors.ServerError) {
-                            callback(result);
-                            return;
-                        }
-                        let html = '<p>A new admin account has been created, kindly use this <a href="http://localhost:3000/passwordhandler/admin/complete?uname=' + uname + '&token=' + result + '">link</a> to complete the account.</p>'
-                        this.sendMail(email, 'New admin created', '', html, callback);
-                        callback(new ServerErrors.EmailConformationNeeded())
-                    });
-
+                    let html = '<p>A new admin account has been created, kindly use this <a href="http://localhost:3000/passwordhandler/admin/complete?uname=' + uname + '&token=' + result + '">link</a> to complete the account.</p>'
+                    this.sendMail(email, 'New admin created', '', html, callback);
+                    callback(new ServerErrors.EmailConformationNeeded())
                 });
 
             });

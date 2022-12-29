@@ -114,9 +114,9 @@ exports.createUser = function (body) {
  * userToken Token 
  * no response value expected for this operation
  **/
-exports.deleteUser = function (uname, userToken) {
+exports.deleteUser = function (uname, userToken, admin_uname, admin_token) {
   return new Promise(function (resolve, reject) {
-    backEndHandler.removeUser(uname, userToken, (result) => {
+    backEndHandler.removeUser(uname, userToken, admin_uname, admin_token, (result) => {
       if (result instanceof ServerErrors.InternalServerError) {
         reject(500);
         return;

@@ -44,8 +44,7 @@ exports.createAdmin = function(body, super_admin_uname, super_admin_token) {
   return new Promise(function(resolve, reject) {
     let uname = body["uname"];
     let email = body["email"];
-    let ip = body["ip"];
-    backEndHandler.createAdmin(super_admin_uname, super_admin_token, uname, email, ip, (result) => {
+    backEndHandler.createAdmin(super_admin_uname, super_admin_token, uname, email, (result) => {
       if (result instanceof ServerErrors.EmailConformationNeeded) {
         reject(401);
         return;

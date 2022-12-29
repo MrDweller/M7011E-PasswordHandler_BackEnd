@@ -970,9 +970,6 @@ components:
         email:
           type: string
           example: john@email.com
-        ip:
-          type: string
-          example: 192.168.1.1
 
     Password:
       type: object

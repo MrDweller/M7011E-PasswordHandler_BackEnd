@@ -117,6 +117,20 @@ class DataBaseQueries {
         });
     }
 
+    static getAllUsers(dbConn, callback) {
+        var sql = `SELECT uname, email FROM users`
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(ServerErrors.InternalServerError());
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(result);
+            }
+        });
+    }
+
     static getUserToken(dbConn, uname, callback){
         var sql = `SELECT token FROM users WHERE users.uname = "${uname}" AND CURRENT_TIMESTAMP() - token_timestamp < 3600`;
         dbConn.query(sql, (err, result) => {
