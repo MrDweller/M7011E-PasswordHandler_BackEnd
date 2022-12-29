@@ -138,6 +138,75 @@ paths:
         "403":
           description: Invalid uname and token supplied
       x-swagger-router-controller: User
+  /user/{uname}/pfp:
+    post:
+      tags:
+      - user
+      summary: "Sets profile picture to a costum picture and retrives the url"
+      description: ""
+      operationId: uploadPFP
+      parameters:
+      - name: uname
+        in: path
+        description: The user name for login
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: user-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/pfp'
+        "400":
+          description: Bad request
+        "403":
+          description: Invalid uname and password supplied
+      x-swagger-router-controller: User
+    get:
+      tags:
+      - user
+      summary: Retrives the url of the profile picture
+      description: ""
+      operationId: getPFP
+      parameters:
+      - name: uname
+        in: path
+        description: The name that needs to be fetched.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: user-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/pfpURL'
+        "400":
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
+      x-swagger-router-controller: User
   /user/{identification}/uname:
     get:
       tags:
@@ -261,6 +330,21 @@ paths:
         explode: false
         schema:
           $ref: '#/components/schemas/Token'
+      - name: admin-uname
+        in: header
+        description: The username of the admin.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: admin-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
       responses:
         "200":
           description: successful operation
@@ -269,6 +353,44 @@ paths:
         "403":
           description: Invalid uname and token supplied
       x-swagger-router-controller: User
+  /users:
+    get:
+      tags:
+      - users
+      summary: get info about all users
+      description: This gives all info for all users.
+      operationId: getUsers
+      parameters:
+      - name: admin-uname
+        in: header
+        description: The username of the admin thats fetching the users.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: admin-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInfo'
+                x-content-type: application/json
+        "400":
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
+      x-swagger-router-controller: Users
   /password/{uname}:
     put:
       tags:
@@ -561,7 +683,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserInfo'
+                $ref: '#/components/schemas/AdminInfo'
         "400":
           description: Bad request
         "403":
@@ -661,7 +783,7 @@ paths:
         explode: false
         schema:
           $ref: '#/components/schemas/Token'
-      - name: super_admin_uname
+      - name: super-admin-uname
         in: header
         required: false
         style: simple
@@ -683,6 +805,43 @@ paths:
         "403":
           description: Invalid uname and token supplied
       x-swagger-router-controller: Admin
+  /admins:
+    get:
+      tags:
+      - admins
+      summary: get info about all admins
+      description: This gives all infor for all admins.
+      operationId: getAdmins
+      parameters:
+      - name: super-admin-uname
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: super-admin-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminInfo'
+                x-content-type: application/json
+        "400":
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
+      x-swagger-router-controller: Admins
 components:
   schemas:
     NewUser:
@@ -785,6 +944,23 @@ components:
         website_uname: john
         website_password: "12345"
         
+    AdminInfo:
+      type: object
+      properties:
+        uname:
+          type: string
+          example: john
+        email:
+          type: string
+          example: john@email.com
+        isSuperAdmin:
+          type: boolean
+          example: false
+      example:
+        uname: john
+        email: john@email.com
+        isSuperAdmin: false
+
     NewAdmin:
       type: object
       properties:
@@ -811,3 +987,20 @@ components:
         ip:
           type: string
           example: 192.168.1.1
+
+    pfpURL:
+      type: object
+      properties:
+        pfpURL:
+          type: string
+          example: "https://passwordhandler.s3.eu-north-1.amazonaws.com/user_tab.png"
+
+    pfp:
+      type: object
+      properties:
+        pfp:
+          type: string
+          example: "https://passwordhandler.s3.eu-north-1.amazonaws.com/1?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAXO64ZB7XVLNMSSAU%2F20221228%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20221228T222041Z&X-Amz-Expires=900&X-Amz-Signature=f8d5dc4dab8b37c404da08f3070d51b190cdfd2e724fefc396e1c6f016a57b63&X-Amz-SignedHeaders=host"
+        pfpURL:
+          type: string
+          example: "https://passwordhandler.s3.eu-north-1.amazonaws.com/user_tab.png"
