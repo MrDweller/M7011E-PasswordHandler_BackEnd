@@ -330,6 +330,21 @@ paths:
         explode: false
         schema:
           $ref: '#/components/schemas/Token'
+      - name: admin-uname
+        in: header
+        description: The username of the admin.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: admin-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
       responses:
         "200":
           description: successful operation
@@ -338,6 +353,44 @@ paths:
         "403":
           description: Invalid uname and token supplied
       x-swagger-router-controller: User
+  /users:
+    get:
+      tags:
+      - users
+      summary: get info about all users
+      description: This gives all info for all users.
+      operationId: getUsers
+      parameters:
+      - name: admin-uname
+        in: header
+        description: The username of the admin thats fetching the users.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: admin-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInfo'
+                x-content-type: application/json
+        "400":
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
+      x-swagger-router-controller: Users
   /password/{uname}:
     put:
       tags:
@@ -730,7 +783,7 @@ paths:
         explode: false
         schema:
           $ref: '#/components/schemas/Token'
-      - name: super_admin_uname
+      - name: super-admin-uname
         in: header
         required: false
         style: simple
