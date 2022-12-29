@@ -21,12 +21,16 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              $ref: '#/components/schemas/NewUser'
       responses:
         "201":
           description: successful operation
         "400":
-          description: Invalid credentials supplied
+          description: Bad request
+        "470":
+          description: Username already taken
+        "471":
+          description: Email already taken
       x-swagger-router-controller: User
   /user/{uname}/login:
     post:
@@ -54,13 +58,17 @@ paths:
         "200":
           description: successful operation
           headers:
-            userToken:
+            user-token:
               style: simple
               explode: false
               schema:
                 $ref: '#/components/schemas/Token'
         "400":
-          description: Invalid uname/password supplied
+          description: Bad request
+        "401":
+          description: Ip is not authenticated
+        "403":
+          description: Invalid uname and password supplied
       x-swagger-router-controller: User
   /user/{uname}/logout:
     get:
@@ -78,7 +86,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: userToken
+      - name: user-token
         in: header
         required: true
         style: simple
@@ -89,7 +97,9 @@ paths:
         "200":
           description: successful operation
         "400":
-          description: Invalid username/password supplied
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
       x-swagger-router-controller: User
   /user/{uname}/confirmIp:
     post:
@@ -107,7 +117,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: emailToken
+      - name: email-token
         in: header
         required: true
         style: simple
@@ -124,7 +134,108 @@ paths:
         "200":
           description: successful operation
         "400":
-          description: Invalid username or token supplied
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
+      x-swagger-router-controller: User
+  /user/{uname}/pfp:
+    post:
+      tags:
+      - user
+      summary: "Sets profile picture to a costum picture and retrives the url"
+      description: ""
+      operationId: uploadPFP
+      parameters:
+      - name: uname
+        in: path
+        description: The user name for login
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: user-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/pfp'
+        "400":
+          description: Bad request
+        "403":
+          description: Invalid uname and password supplied
+      x-swagger-router-controller: User
+    get:
+      tags:
+      - user
+      summary: Retrives the url of the profile picture
+      description: ""
+      operationId: getPFP
+      parameters:
+      - name: uname
+        in: path
+        description: The name that needs to be fetched.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: user-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/pfpURL'
+        "400":
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
+      x-swagger-router-controller: User
+  /user/{identification}/uname:
+    get:
+      tags:
+      - user
+      summary: Get username
+      description: "This gives the username of a user based on identification"
+      operationId: getUname
+      parameters:
+      - name: identification
+        in: path
+        description: Identification
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Identification'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uname:
+                    type: string
+                    example: 'john'
+        "404":
+          description: Uname not found
       x-swagger-router-controller: User
   /user/{uname}:
     get:
@@ -142,7 +253,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: userToken
+      - name: user-token
         in: header
         required: true
         style: simple
@@ -157,9 +268,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/UserInfo'
         "400":
+          description: Bad request
+        "403":
           description: Invalid uname and token supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: User
     put:
       tags:
@@ -176,7 +287,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: userToken
+      - name: user-token
         in: header
         required: true
         style: simple
@@ -193,6 +304,8 @@ paths:
         "200":
           description: successful operation
         "400":
+          description: Bad request
+        "403":
           description: Invalid uname and token supplied
       x-swagger-router-controller: User
     delete:
@@ -210,7 +323,22 @@ paths:
         explode: false
         schema:
           type: string
-      - name: userToken
+      - name: user-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      - name: admin-uname
+        in: header
+        description: The username of the admin.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: admin-token
         in: header
         required: true
         style: simple
@@ -221,10 +349,48 @@ paths:
         "200":
           description: successful operation
         "400":
+          description: Bad request
+        "403":
           description: Invalid uname and token supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: User
+  /users:
+    get:
+      tags:
+      - users
+      summary: get info about all users
+      description: This gives all info for all users.
+      operationId: getUsers
+      parameters:
+      - name: admin-uname
+        in: header
+        description: The username of the admin thats fetching the users.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: admin-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserInfo'
+                x-content-type: application/json
+        "400":
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
+      x-swagger-router-controller: Users
   /password/{uname}:
     put:
       tags:
@@ -241,7 +407,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: userToken
+      - name: user-token
         in: header
         required: true
         style: simple
@@ -260,12 +426,13 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/WebsitePassword'
-                x-content-type: application/json
+                $ref: '#/components/schemas/WebsitePassword'
         "400":
+          description: Bad request
+        "403":
           description: Invalid credentials supplied
+        "404":
+          description: Not found
       x-swagger-router-controller: Password
     post:
       tags:
@@ -282,7 +449,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: userToken
+      - name: user-token
         in: header
         required: true
         style: simple
@@ -299,6 +466,8 @@ paths:
         "201":
           description: successful operation
         "400":
+          description: Bad request
+        "403":
           description: Invalid credentials supplied
       x-swagger-router-controller: Password
   /passwords/{uname}:
@@ -317,7 +486,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: userToken
+      - name: user-token
         in: header
         required: true
         style: simple
@@ -335,7 +504,9 @@ paths:
                   $ref: '#/components/schemas/WebsitePasswordInfo'
                 x-content-type: application/json
         "400":
-          description: Invalid credentials supplied
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
       x-swagger-router-controller: Passwords
   /admin:
     post:
@@ -345,7 +516,14 @@ paths:
       description: "This creates a new user, on signup."
       operationId: createAdmin
       parameters:
-      - name: superAdminToken
+      - name: super-admin-uname
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: super-admin-token
         in: header
         required: true
         style: simple
@@ -357,12 +535,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserInfo'
+              $ref: '#/components/schemas/NewAdmin'
       responses:
         "201":
           description: successful operation
         "400":
-          description: Invalid credentials supplied
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
+        "470":
+          description: Username already taken
+        "471":
+          description: Email already taken
       x-swagger-router-controller: Admin
   /admin/{uname}/login:
     post:
@@ -390,13 +574,17 @@ paths:
         "200":
           description: successful operation
           headers:
-            adminToken:
+            admin-token:
               style: simple
               explode: false
               schema:
                 $ref: '#/components/schemas/Token'
         "400":
-          description: Invalid uname/password supplied
+          description: Bad request
+        "401":
+          description: Ip is not authenticated
+        "403":
+          description: Invalid uname and password supplied
       x-swagger-router-controller: Admin
   /admin/{uname}/logout:
     get:
@@ -414,7 +602,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: adminToken
+      - name: admin-token
         in: header
         required: true
         style: simple
@@ -425,7 +613,9 @@ paths:
         "200":
           description: successful operation
         "400":
-          description: Invalid username/password supplied
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
       x-swagger-router-controller: Admin
   /admin/{uname}/confirmIp:
     post:
@@ -443,7 +633,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: emailToken
+      - name: email-token
         in: header
         required: true
         style: simple
@@ -460,7 +650,9 @@ paths:
         "200":
           description: successful operation
         "400":
-          description: Invalid username or token supplied
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
       x-swagger-router-controller: Admin
   /admin/{uname}:
     get:
@@ -478,7 +670,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: adminToken
+      - name: admin-token
         in: header
         required: true
         style: simple
@@ -491,11 +683,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UserInfo'
+                $ref: '#/components/schemas/AdminInfo'
         "400":
+          description: Bad request
+        "403":
           description: Invalid uname and token supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: Admin
     put:
       tags:
@@ -512,7 +704,7 @@ paths:
         explode: false
         schema:
           type: string
-      - name: adminToken
+      - name: admin-token
         in: header
         required: true
         style: simple
@@ -529,6 +721,44 @@ paths:
         "200":
           description: successful operation
         "400":
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
+      x-swagger-router-controller: Admin
+    post:
+      tags:
+      - admin
+      summary: Add admin password
+      description: This can only be done with a valid email token.
+      operationId: addAdminPassword
+      parameters:
+      - name: uname
+        in: path
+        description: uname for user to be updated
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: email-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      requestBody:
+        description: Update an existent user
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Password'
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: Bad request
+        "403":
           description: Invalid uname and token supplied
       x-swagger-router-controller: Admin
     delete:
@@ -546,14 +776,21 @@ paths:
         explode: false
         schema:
           type: string
-      - name: adminToken
+      - name: admin-token
         in: header
         required: false
         style: simple
         explode: false
         schema:
           $ref: '#/components/schemas/Token'
-      - name: superAdminToken
+      - name: super-admin-uname
+        in: header
+        required: false
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: super-admin-token
         in: header
         required: false
         style: simple
@@ -564,12 +801,64 @@ paths:
         "200":
           description: successful operation
         "400":
+          description: Bad request
+        "403":
           description: Invalid uname and token supplied
-        "404":
-          description: User not found
       x-swagger-router-controller: Admin
+  /admins:
+    get:
+      tags:
+      - admins
+      summary: get info about all admins
+      description: This gives all infor for all admins.
+      operationId: getAdmins
+      parameters:
+      - name: super-admin-uname
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: super-admin-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminInfo'
+                x-content-type: application/json
+        "400":
+          description: Bad request
+        "403":
+          description: Invalid uname and token supplied
+      x-swagger-router-controller: Admins
 components:
   schemas:
+    NewUser:
+      type: object
+      properties:
+        uname:
+          type: string
+          example: john
+        email:
+          type: string
+          example: john@email.com
+        password:
+          type: string
+          example: "12345"
+        ip:
+          type: string
+          example: 192.168.1.1
     User:
       type: object
       properties:
@@ -582,6 +871,9 @@ components:
         password:
           type: string
           example: "12345"
+        newPassword:
+          type: string
+          example: "54321"
     UserInfo:
       type: object
       properties:
@@ -594,6 +886,11 @@ components:
       example:
         uname: john
         email: john@email.com
+
+    Identification:
+      type: string
+      example: john@email.com
+
     Token:
       type: string
       example: Xey27tst7
@@ -603,6 +900,9 @@ components:
         password:
           type: string
           example: "12345"
+        ip:
+          type: string
+          example: 192.168.1.1
     WebsitePasswordAuthentication:
       type: object
       properties:
@@ -643,9 +943,61 @@ components:
         website_url: google.com
         website_uname: john
         website_password: "12345"
+        
+    AdminInfo:
+      type: object
+      properties:
+        uname:
+          type: string
+          example: john
+        email:
+          type: string
+          example: john@email.com
+        isSuperAdmin:
+          type: boolean
+          example: false
+      example:
+        uname: john
+        email: john@email.com
+        isSuperAdmin: false
+
+    NewAdmin:
+      type: object
+      properties:
+        uname:
+          type: string
+          example: john
+        email:
+          type: string
+          example: john@email.com
+
+    Password:
+      type: object
+      properties:
+        password:
+          type: string
+          example: "12345"
+          
     Ip:
       type: object
       properties:
         ip:
           type: string
           example: 192.168.1.1
+
+    pfpURL:
+      type: object
+      properties:
+        pfpURL:
+          type: string
+          example: "https://passwordhandler.s3.eu-north-1.amazonaws.com/user_tab.png"
+
+    pfp:
+      type: object
+      properties:
+        pfp:
+          type: string
+          example: "https://passwordhandler.s3.eu-north-1.amazonaws.com/1?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAXO64ZB7XVLNMSSAU%2F20221228%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20221228T222041Z&X-Amz-Expires=900&X-Amz-Signature=f8d5dc4dab8b37c404da08f3070d51b190cdfd2e724fefc396e1c6f016a57b63&X-Amz-SignedHeaders=host"
+        pfpURL:
+          type: string
+          example: "https://passwordhandler.s3.eu-north-1.amazonaws.com/user_tab.png"

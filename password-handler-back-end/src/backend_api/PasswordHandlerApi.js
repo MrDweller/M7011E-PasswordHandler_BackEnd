@@ -1,6 +1,10 @@
 const express = require('express');
+
+const path = require('path');
+const http = require('http');
+const oas3Tools = require('oas3-tools');
+
 const cors = require('cors');
-const bodyParser = require('body-parser');
 const BackEndHandler = require('../backendHandler')
 const InvalidToken = require('../errors');
 
@@ -9,29 +13,42 @@ class PasswordHandlerApi {
         this.host = host;
         this.port = port;
 
-        this.expressApi = express();
-        this.expressApi.use(bodyParser.json());
-        
-        
         var corsOptions = {
-            origin: 'http://localhost:3000',
-            optionsSuccessStatus: 200 // For legacy browser support
+            origin: '*',
+            methods: ['GET', 'POST', 'PUT', 'DELETE'],
+            exposedHeaders:  '*',
+            optionsSuccessStatus: 204 // For legacy browser support
         }
-        
-        this.expressApi.use(cors(corsOptions));
+
+
+        // swaggerRouter configuration
+        var options = {
+            routing: {
+                controllers: path.join(__dirname, './controllers')
+            },
+        };
+
+        let expressAppConfig = oas3Tools.expressAppConfig('./openapi.yaml', options);
+        let openApiApp = expressAppConfig.getApp();
+        this.app = express();
+
+        // Add headers
+        this.app.use(cors(corsOptions));
+        for (let i = 2; i < openApiApp._router.stack.length; i++) {
+            this.app._router.stack.push(openApiApp._router.stack[i])
+        }
 
     }
 
     start() {
         let host = this.host;
         let port = this.port;
-        
 
-        this.server = this.expressApi.listen(this.port, this.host, function () {
-            console.log("PasswordHandlerApi started at: " + host + ":" + port);
-        });        
-
-        this.#listenForApiRequests();
+        // Initialize the Swagger middleware
+        http.createServer(this.app).listen(this.port, this.host, function () {
+            console.log('Your server is listening on port %d (http://%s:%d)', port, host, port);
+            console.log('Swagger-ui is available on http://%s:%d/docs', host, port);
+        });
 
     }
 
@@ -100,7 +117,7 @@ class PasswordHandlerApi {
             try {
                 console.log("request.body: " + request.body);
 
-                
+
                 backEndHandler.addUser(request.body, (data) => {
                     console.log(data);
 
@@ -109,7 +126,7 @@ class PasswordHandlerApi {
 
                     response.status(200).send(responseBody);
                 });
-                
+
             } catch (error) {
                 console.log(error);
                 response.status(400).end();
@@ -120,13 +137,12 @@ class PasswordHandlerApi {
             try {
                 console.log("request.body: " + request.body);
 
-                
+
                 backEndHandler.readUserName(request.body, (data) => {
-                    if (data instanceof InvalidToken)
-                    {
+                    if (data instanceof InvalidToken) {
                         let responseBody = {};
                         responseBody["error"] = "INVALID_TOKEN";
-    
+
                         response.status(200).send(responseBody);
                         return;
                     }
@@ -137,7 +153,7 @@ class PasswordHandlerApi {
 
                     response.status(200).send(responseBody);
                 });
-                
+
             } catch (error) {
                 console.log(error);
                 response.status(400).end();
@@ -147,7 +163,7 @@ class PasswordHandlerApi {
         this.expressApi.post('/email', function (request, response) {
             try {
                 console.log("request.body: " + request.body);
-            
+
                 backEndHandler.resetPassword(request.body, (data) => {
                     console.log(data);
 
@@ -156,7 +172,7 @@ class PasswordHandlerApi {
 
                     response.status(200).send(responseBody);
                 });
-                
+
             } catch (error) {
                 console.log(error);
                 response.status(400).end();
@@ -164,7 +180,7 @@ class PasswordHandlerApi {
         });
 
 
-        this.expressApi.post('/authenticate', function(request, response){
+        this.expressApi.post('/authenticate', function (request, response) {
             try {
                 console.log(request.body);
                 backEndHandler.loginUser(request.body, (data) => {
@@ -173,7 +189,7 @@ class PasswordHandlerApi {
                     responseBody["token"] = data;
                     response.status(200).send(responseBody);
                 });
-            } catch(error){
+            } catch (error) {
                 console.log(error)
                 response.status(400).end();
             }
@@ -182,14 +198,13 @@ class PasswordHandlerApi {
         this.expressApi.post('/readAllPasswords', function (request, response) {
             try {
                 console.log("request.body: " + request.body);
-                
+
                 backEndHandler.getAllPasswords(request.body, (data) => {
                     console.log(data);
-                    if (data instanceof InvalidToken)
-                    {
+                    if (data instanceof InvalidToken) {
                         let responseBody = {};
                         responseBody["error"] = "INVALID_TOKEN";
-    
+
                         response.status(200).send(responseBody);
                         return;
                     }
@@ -200,7 +215,7 @@ class PasswordHandlerApi {
 
 
                 });
-                
+
             } catch (error) {
                 console.log(error);
                 response.status(400).end();
@@ -213,11 +228,10 @@ class PasswordHandlerApi {
 
                 backEndHandler.readPassword(request.body, (data) => {
                     console.log(data);
-                    if (data instanceof InvalidToken)
-                    {
+                    if (data instanceof InvalidToken) {
                         let responseBody = {};
                         responseBody["error"] = "INVALID_TOKEN";
-    
+
                         response.status(200).send(responseBody);
                         return;
                     }
@@ -227,7 +241,7 @@ class PasswordHandlerApi {
 
                     response.status(200).send(responseBody);
                 });
-                
+
             } catch (error) {
                 console.log(error);
                 response.status(400).end();
@@ -240,11 +254,10 @@ class PasswordHandlerApi {
 
                 backEndHandler.changeMasterPassword(request.body, (data) => {
                     console.log(data);
-                    if (data instanceof InvalidToken)
-                    {
+                    if (data instanceof InvalidToken) {
                         let responseBody = {};
                         responseBody["error"] = "INVALID_TOKEN";
-    
+
                         response.status(200).send(responseBody);
                         return;
                     }
@@ -254,7 +267,7 @@ class PasswordHandlerApi {
 
                     response.status(200).send(responseBody);
                 });
-                
+
             } catch (error) {
                 console.log(error);
                 response.status(400).end();
@@ -267,11 +280,10 @@ class PasswordHandlerApi {
 
                 backEndHandler.changeUname(request.body, (data) => {
                     console.log(data);
-                    if (data instanceof InvalidToken)
-                    {
+                    if (data instanceof InvalidToken) {
                         let responseBody = {};
                         responseBody["error"] = "INVALID_TOKEN";
-    
+
                         response.status(200).send(responseBody);
                         return;
                     }
@@ -281,7 +293,7 @@ class PasswordHandlerApi {
 
                     response.status(200).send(responseBody);
                 });
-                
+
             } catch (error) {
                 console.log(error);
                 response.status(400).end();
@@ -294,11 +306,10 @@ class PasswordHandlerApi {
 
                 backEndHandler.requestEmailChange(request.body, (data) => {
                     console.log(data);
-                    if (data instanceof InvalidToken)
-                    {
+                    if (data instanceof InvalidToken) {
                         let responseBody = {};
                         responseBody["error"] = "INVALID_TOKEN";
-    
+
                         response.status(200).send(responseBody);
                         return;
                     }
@@ -308,7 +319,7 @@ class PasswordHandlerApi {
 
                     response.status(200).send(responseBody);
                 });
-                
+
             } catch (error) {
                 console.log(error);
                 response.status(400).end();
@@ -327,7 +338,7 @@ class PasswordHandlerApi {
 
                     response.status(200).send(responseBody);
                 });
-                
+
             } catch (error) {
                 console.log(error);
                 response.status(400).end();
@@ -337,7 +348,7 @@ class PasswordHandlerApi {
         this.expressApi.post('/addPassword', function (request, response) {
             try {
                 console.log("request.body: " + request.body);
-                
+
                 backEndHandler.addPassword(request.body, (data) => {
                     console.log(data);
 
@@ -346,7 +357,7 @@ class PasswordHandlerApi {
 
                     response.status(200).send(responseBody);
                 });
-                
+
             } catch (error) {
                 console.log(error);
                 response.status(400).end();

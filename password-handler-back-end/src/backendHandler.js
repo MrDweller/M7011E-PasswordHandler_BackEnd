@@ -16,6 +16,9 @@ const aws = require('aws-sdk');
 const { url } = require('inspector');
 
 
+const ServerErrors = require('./errors');
+const { InvalidToken } = require('./errors');
+
 class BackEndManager {
     constructor() {
         let config = JSON.parse(fs.readFileSync("./src/config.json"));
@@ -27,6 +30,7 @@ class BackEndManager {
         });
         this.dbConn.connect((err) => {
             if (err) {
+                console.log(err);
                 console.log("Can't connect to the database!");
                 process.exit(1);
             }
@@ -38,44 +42,44 @@ class BackEndManager {
 
     }
 
-    #readPrivateRsaKey() {
-        return fs.readFileSync('./privateServerKey');
-    }
+    // #readPrivateRsaKey() {
+    //     return fs.readFileSync('./privateServerKey');
+    // }
 
-    generateServerKeys() {
-        let rsaKeys = RsaEncryption.generateRSA();
-        let publicKey = rsaKeys[RsaEncryption.PUBLIC_RSA_KEY_IDENTIFIER];
-        let privateKey = rsaKeys[RsaEncryption.PRIVATE_RSA_KEY_IDENTIFIER];
-        fs.writeFileSync('./publicServerKey', publicKey, err => {
-            if (err) {
-                console.error(err);
-            }
-        });
-        fs.writeFileSync('./privateServerKey', privateKey, err => {
-            if (err) {
-                console.error(err);
-            }
-        });
+    // generateServerKeys() {
+    //     let rsaKeys = RsaEncryption.generateRSA();
+    //     let publicKey = rsaKeys[RsaEncryption.PUBLIC_RSA_KEY_IDENTIFIER];
+    //     let privateKey = rsaKeys[RsaEncryption.PRIVATE_RSA_KEY_IDENTIFIER];
+    //     fs.writeFileSync('./publicServerKey', publicKey, err => {
+    //         if (err) {
+    //             console.error(err);
+    //         }
+    //     });
+    //     fs.writeFileSync('./privateServerKey', privateKey, err => {
+    //         if (err) {
+    //             console.error(err);
+    //         }
+    //     });
 
-    }
+    // }
 
-    getPublicServerKey() {
-        return fs.readFileSync('./publicServerKey');
-    }
+    // getPublicServerKey() {
+    //     return fs.readFileSync('./publicServerKey');
+    // }
 
-    addUser(jsonData, callback) {
+    addUser(uname, email, masterpwd, userIP, callback) {
         // let secretData = jsonData["secretData"];
         // let publicData = jsonData["publicData"];
 
         // let privateRsaKey = this.#readPrivateRsaKey();
         // let decryptedData = RsaEncryption.rsaDecryptJsonObject(privateRsaKey, secretData);
 
-        let decryptedData = jsonData;
+        // let decryptedData = jsonData;
 
-        let userName = decryptedData["uname"];
-        let email = decryptedData["email"];
-        let masterpwd = decryptedData["password"];
-        let userIP = decryptedData["userIP"]
+        // let uname = decryptedData["uname"];
+        // let email = decryptedData["email"];
+        // let masterpwd = decryptedData["password"];
+        // let userIP = decryptedData["userIP"]
 
         let key = AES.generateKey();
         let ivKey = AES.generateIv();
@@ -87,19 +91,21 @@ class BackEndManager {
 
         let encryptedKey = AES.encryptData(key, hashed_masterpwd, ivKey);
         let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, secondSalt);
-        console.log("UNAME addUser() " + userName);
+        console.log("UNAME addUser() " + uname);
 
         try {
-            DataBaseQueries.addUser(this.dbConn, userName, email, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, ivKey, (status) => {
-                if(status){
-                    DataBaseQueries.addIP(this.dbConn, userName, userIP, (status) => {
-                        if(status){
-                            callback(true);
-                        }else{
-                            callback(false);
-                        }
-                    })
+            DataBaseQueries.addUser(this.dbConn, uname, email, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, ivKey, (result) => {
+                if (result instanceof ServerErrors.ServerError) {
+                    callback(result);
+                    return;
                 }
+                DataBaseQueries.addIP(this.dbConn, uname, userIP, (result) => {
+                    if (result instanceof ServerErrors.ServerError) {
+                        callback(result);
+                        return;
+                    }
+                    callback(true);
+                });
             });
 
         }
@@ -108,56 +114,168 @@ class BackEndManager {
         }
     }
 
-    addIPtoDB(jsonData, callback){
-        let userIP = jsonData["userIP"];
-        let token = jsonData["token"];
-        console.log("token: " + token);
+    addIPtoDB(uname, emailToken, userIP, callback) {
+        // let userIP = jsonData["userIP"];
+        // let token = jsonData["token"];
+        console.log("token: " + emailToken);
         console.log("ip: " + userIP);
-        DataBaseQueries.getUnameFromEmailToken(this.dbConn, token, (err, uname) => {
-            console.log("uname: " + uname);
-            
-            if (err) {
-                console.log("error" + err);
-                callback(false);
-                return;
-            }
-            if (uname === null)
-            {
-                callback(false);
-                return;
-            }
+        this.verifyEmailToken(uname, emailToken, (result) => {
+            console.log("tokenDb: " + result);
 
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
+                return;
+            }
             DataBaseQueries.addIP(this.dbConn, uname, userIP, (result) => {
-                if(result){
+                if (result === true) {
                     callback(true)
-                }else{
+                } else {
                     callback(false)
                 }
             });
         });
     }
 
-    loginUser(jsonData, callback) {
-        let decryptedData = jsonData;
-        let identification = decryptedData["identification"];
-        let masterpwd = decryptedData["password"];
-        let userIP = decryptedData["userIP"]   
-        DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (uname) => {
-            if (uname === null) {
-                callback(null);
+    removeUser(uname, token, admin_uname, admin_token, callback) {
+        if (admin_uname && admin_token) {
+            this.verifyAdmin(admin_uname, admin_token, (result) => {
+                if (result !== true) {
+                    callback(result);
+                    return;
+                }
+
+                DataBaseQueries.removeUser(this.dbConn, uname, (result) => {
+                    callback(result);
+                });
+            });
+        }
+        else {
+            this.verifyUser(uname, token, (result) => {
+                if (result instanceof ServerErrors.ServerError) {
+                    callback(result);
+                    return;
+                }
+                if (result !== true) {
+                    callback(new ServerErrors.InternalServerError());
+                    return;
+                }
+    
+                DataBaseQueries.removeUser(this.dbConn, uname, (result) => {
+                    callback(result);
+                });
+    
+            });
+
+        }
+    }
+
+    getUserInfo(uname, token, callback) {
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
 
+            DataBaseQueries.getEmailFromUname(this.dbConn, uname, (result) => {
+                if (result instanceof ServerErrors.ServerError) {
+                    callback(result);
+                    return;
+                }
+                if (result == null) {
+                    callback(new ServerErrors.NoRowsEffectedInDb());
+                    return;
+                }
+                let userInfo = {
+                    "uname": uname,
+                    "email": result
+                };
+                callback(userInfo);
+            });
+
+        });
+    }
+
+    getUsers(admin_uname, admin_token, callback) {
+        this.verifyAdmin(admin_uname, admin_token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+
+            DataBaseQueries.getAllUsers(this.dbConn, (result) => {
+                callback(result);
+            });
+
+        });
+    }
+
+    verifyUser(uname, token, callback) {
+        DataBaseQueries.getUserToken(this.dbConn, uname, (result) => {
+            console.log(result);
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+            if (result == null) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            if (result !== token) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            callback(true);
+        });
+    }
+
+    verifyEmailToken(uname, emailToken, callback) {
+        DataBaseQueries.getUserEmailToken(this.dbConn, uname, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+            if (result == null) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            if (result !== emailToken) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            callback(true);
+        });
+    }
+
+    loginUser(identification, masterpwd, userIP, callback) {
+        // let decryptedData = jsonData;
+        // let identification = decryptedData["identification"];
+        // let masterpwd = decryptedData["password"];
+        // let userIP = decryptedData["userIP"]   
+        DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+
+            let uname = result;
             this.#authenticateUser(uname, masterpwd, (result) => {
                 if (result !== true) {
-                    callback(null);
+                    callback(new ServerErrors.InvalidLogin());
                     return;
                 }
                 DataBaseQueries.checkIPofUser(this.dbConn, uname, userIP, (result) => {
                     if (result) {
                         this.#addNewToken(uname, (token) => {
                             if (token === null) {
-                                callback(null);
+                                callback(new ServerErrors.InternalServerError());
                                 return;
                             }
                             callback(token);
@@ -166,11 +284,12 @@ class BackEndManager {
                         DataBaseQueries.getEmailFromUname(this.dbConn, uname, (email) => {
                             this.#addNewEmailToken(uname, (token) => {
                                 if (token === null) {
-                                    callback(null);
+                                    callback(new ServerErrors.InternalServerError());
                                     return;
                                 }
-                                let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?token=' + token + '&ip=' + userIP + '">link</a> to verify the login.</p>'
-                                this.sendMail(email,'New login location detected','' , html, callback);
+                                let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?uname=' + uname + '&token=' + token + '&ip=' + userIP + '">link</a> to verify the login.</p>'
+                                this.sendMail(email, 'New login location detected', '', html, callback);
+                                callback(new ServerErrors.EmailConformationNeeded())
                             });
                         });
                     }
@@ -184,7 +303,25 @@ class BackEndManager {
 
     }
 
-    #addNewToken(uname, callback){
+    cancelUserToken(uname, token, callback) {
+        this.verifyUser(uname, token, (result) => {
+            console.log(result);
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
+                return;
+            }
+
+            DataBaseQueries.cancelUserToken(this.dbConn, uname, (result) => {
+                callback(result);
+            });
+        });
+    }
+
+    #addNewToken(uname, callback) {
         let newToken = TokenGenerator.generateToken(20, true);
         DataBaseQueries.changeUserToken(this.dbConn, uname, newToken, (result) => {
             if (result) {
@@ -210,72 +347,50 @@ class BackEndManager {
         })
     }
 
-    getAllPasswords(jsonData, callback) {
-        let decryptedData = jsonData;
-        let token = decryptedData["token"];
-        console.log("token " + token);
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (err, uname) => {
+    getAllPasswords(uname, token, callback) {
+        // let decryptedData = jsonData;
+        // let token = decryptedData["token"];
+        // console.log("token " + token);
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
+                return;
+            }
 
-            if (err) {
-                console.log("error" + err);
-                callback(err);
-                return;
-            }
-            if (uname === null) {
-                callback(null);
-                return;
-            }
             DataBaseQueries.getAllWebsitePasswords(this.dbConn, uname, (result) => {
-                if (result === null) {
-                    callback(null);
-                    return;
-                }
-                console.log(result);
                 callback(result);
             });
-
         });
+
 
     }
 
-    readUserName(jsonData, callback) {
-        let decryptedData = jsonData;
-        let token = decryptedData["token"];
-
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (error, uname) => {
-            if (error) {
-                console.log("error " + error);
-                callback(error);
-                return;
-            }
-
-            if (uname === null) {
-                callback(null);
-                return;
-            }
-
-            callback(uname);
+    readUserName(identification, callback) {
+        DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (result) => {
+            callback(result);
         });
     }
 
-    changeMasterPassword(jsonData, callback) {
-        let decryptedData = jsonData;
-        let token = decryptedData["token"];
-        let masterpwd = decryptedData["password"];
-        let new_masterpwd = decryptedData["newPassword"];
+    changeMasterPassword(uname, token, masterpwd, new_masterpwd, callback) {
+        // let decryptedData = jsonData;
+        // let token = decryptedData["token"];
+        // let masterpwd = decryptedData["password"];
+        // let new_masterpwd = decryptedData["newPassword"];
 
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (error, uname) => {
-            console.log(uname + ": " + masterpwd);
-            if (error) {
-                console.log("error" + error);
-                callback(error);
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
 
-            if (uname === null) {
-                callback(null);
-                return;
-            }
             this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
                 if (result !== true) {
                     callback(null);
@@ -309,70 +424,78 @@ class BackEndManager {
 
     }
 
-    changeUname(jsonData, callback) {
-        let decryptedData = jsonData;
-        let token = decryptedData["token"];
-        let new_uname = decryptedData["new_uname"];
+    changeUname(uname, new_uname, token, callback) {
+        // let decryptedData = jsonData;
+        // let token = decryptedData["token"];
+        // let new_uname = decryptedData["new_uname"];
 
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (err, uname) => {
-            if (err) {
-                console.log("error" + err);
-                callback(err);
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
                 return;
             }
-            if (uname === null) {
-                callback(null);
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
+
             DataBaseQueries.changeUname(this.dbConn, uname, new_uname, (result) => {
                 callback(result);
             })
         });
     }
 
-    requestEmailChange(jsonData, callback) {
-        let decryptedData = jsonData;
-        let token = decryptedData["token"];
-        let new_email = decryptedData["new_email"];
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (err, uname) => {
-            if (err) {
-                console.log("error" + err);
-                callback(err);
+    requestEmailChange(uname, token, new_email, callback) {
+        // let decryptedData = jsonData;
+        // let token = decryptedData["token"];
+        // let new_email = decryptedData["new_email"];
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
                 return;
             }
-            if (uname === null) {
-                callback(null);
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
+
             this.#verifyEmail(uname, new_email, (err) => {
-                if(err) {
+                if (err) {
                     callback(false);
                     return;
                 }
                 callback(true);
-                
+
 
             });
 
         })
-        // TODO: Generate a token and send an email conformation request
-        //this.sendMail(new_email, )
     }
 
-    uploadPFP(jsonData, callback){
-
-
-        
-        let token = jsonData["token"];
-        DataBaseQueries.getPFPIDfromToken(this.dbConn, token, (pfpid) => {
-           
-            if (pfpid === null) {
-                callback(null);
+    uploadPFP(uname, token, callback) {
+        this.verifyUser(uname, token, (result) => {
+            console.log(result);
+            if (result != true) {
+                callback(result);
                 return;
             }
-            DataBaseQueries.addPFPURLfromToken(this.dbConn, token, pfpid , (status) => {
-                let config = JSON.parse(fs.readFileSync("./src/config.json"));
-                if (status) {
+            DataBaseQueries.getPFPID(this.dbConn, uname, (result) => {
+                console.log(result);
+
+
+                if (result instanceof ServerErrors.ServerError) {
+                    callback(result);
+                    return;
+                }
+                let pfpid = result;
+                DataBaseQueries.addPFPURL(this.dbConn, uname, pfpid, (result) => {
+                    console.log(result);
+                    if (result !== true) {
+                        callback(result);
+                        return;
+                    }
+
+                    let config = JSON.parse(fs.readFileSync("./src/config.json"));
                     console.log("dis is pfpid once again: " + pfpid);
                     config["databaseConnection"]["host"];
                     const region = config["s3Config"]["region"];
@@ -380,91 +503,89 @@ class BackEndManager {
                     const accessKeyId = config["s3Config"]["access_key"];
 
                     const secretAccessKey = config["s3Config"]["access_key_secret"];
-                    
-        
-        
+
                     const s3 = new aws.S3({
                         region,
                         accessKeyId,
                         secretAccessKey,
                         signatureVersion: 'v4'
-                        
 
-                    })
+                    });
+
                     const imageName = pfpid;
                     const params = ({
-                    Bucket: bucketName,
-                    Key: imageName
-                    })
-                    console.log("did i get there?")
-                    const uploadURL = s3.getSignedUrlPromise('putObject', params).then(
-                        (url) => {
-                            callback(url)
-                        }
-                    )
-                    return;
-                }else{
-                    console.log("error in upload");
-                    callback(false)
-                    return;
-                }
-                
-    
-                
-                
-                
+                        Bucket: bucketName,
+                        Key: imageName
+                    });
+
+                    const uploadURL = s3.getSignedUrlPromise('putObject', params)
+                        .then((url) => {
+                                this.getPFP(uname, token, (result) => {
+                                    if (result instanceof ServerErrors.ServerError) {
+                                        callback(result);
+                                        return;
+                                    }
+                                    let jsonObjet = {
+                                        pfp: url,
+                                        pfpURL: result
+                                    }
+                                    callback(jsonObjet);
+
+                                })
+                            }
+                        )
+                        .catch(
+                            () => {
+                                callback(new ServerErrors.InternalServerError());
+
+                            }
+                        )
+
+                })
+
             })
+        });
 
-        })
-
-        
-
-        
     }
 
-    getPFPURL(jsonData, callback){
-        let token = jsonData["token"];
-        DataBaseQueries.getPFPURLfromToken(this.dbConn, token, (pfpURL) => {
-            console.log("this is my last resort: " + pfpURL)
-            if (pfpURL === false) {
-                callback(false);
+    getPFP(uname, token, callback) {
+        this.verifyUser(uname, token, (result) => {
+            if (result != true) {
+                callback(result);
                 return;
             }
-            
-            callback(pfpURL);
-            
-        })
+        
+            DataBaseQueries.getPFPURL(this.dbConn, uname, (result) => {
+                callback(result);
+    
+            });
+        });
 
-        
-        
     }
 
     #verifyEmail(uname, email, callback) {
         this.#addNewEmailToken(uname, (email_token) => {
-            let html = '<p>You must confirm your email, kindly use this <a href="http://localhost:3000/verifyEmail?email_token=' + email_token + '">link</a> to verify the your email.</p>'
+            let html = '<p>You must confirm your email, kindly use this <a href="http://localhost:3000/verifyEmail?uname=' + uname + '&email_token=' + email_token + '&email=' + email + '">link</a> to verify the your email.</p>'
             this.sendMail(email, 'New email detected', '', html, callback);
         });
     }
 
-    readPassword(jsonData, callback) {
-        let decryptedData = jsonData;
-        let token = decryptedData["token"];
-        let masterpwd = decryptedData["password"];
-        let website_url = decryptedData["website_url"];
-        let website_uname = decryptedData["website_uname"];
-
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (error, uname) => {
-            console.log(uname + ": " + masterpwd);
-            if (error) {
-                console.log("error" + error);
-                callback(error);
+    readPassword(masterpwd, website_url, website_uname, uname, token, callback) {
+        // let decryptedData = jsonData;
+        // let token = decryptedData["token"];
+        // let masterpwd = decryptedData["password"];
+        // let website_url = decryptedData["website_url"];
+        // let website_uname = decryptedData["website_uname"];
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
 
-            if (uname === null) {
-                callback(null);
-                return;
-            }
             this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
                 if (result !== true) {
                     callback(null);
@@ -484,28 +605,26 @@ class BackEndManager {
 
     }
 
-    addPassword(jsonData, callback) {
-        let decryptedData = jsonData;
-        let token = decryptedData["token"];
-        let masterpwd = decryptedData["password"];
-        let website_url = decryptedData["website_url"];
-        let website_uname = decryptedData["website_uname"];
+    addPassword(masterpwd, website_url, website_uname, uname, token, callback) {
+        // let decryptedData = jsonData;
+        // let token = decryptedData["token"];
+        // let masterpwd = decryptedData["password"];
+        // let website_url = decryptedData["website_url"];
+        // let website_uname = decryptedData["website_uname"];
 
-        DataBaseQueries.getUnameFromToken(this.dbConn, token, (error, uname) => {
-            if (error) {
-                console.log("error" + error);
-                callback(error);
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
                 return;
             }
-
-            if (uname === null) {
-                callback(null);
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
                 return;
             }
 
             this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
                 if (result !== true) {
-                    callback(false);
+                    callback(new ServerErrors.WrongMasterPassword());
                     return;
                 }
                 let iv = AES.generateIv();
@@ -595,13 +714,423 @@ class BackEndManager {
 
         transporter.sendMail(mailOptions, function (error, info) {
             if (error) {
-                callback(error)
+                console.log(error);
+                callback(error);
             } else {
                 console.log('Email sent :' + info.response);
             }
         })
     }
 
+
+
+
+    //-------ADMIN--------
+
+    #verifySuperAdmin(super_admin_uname, super_admin_token, callback) {
+        this.verifyAdmin(super_admin_uname, super_admin_token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+
+            DataBaseQueries.isSuperAdmin(this.dbConn, super_admin_uname, (result) => {
+                callback(result);
+
+            })
+        });
+    }
+
+    #addNewEmailTokenAdmin(uname, callback) {
+        let newToken = TokenGenerator.generateToken(20, true);
+        DataBaseQueries.changeUserEmailTokenAdmin(this.dbConn, uname, newToken, (result) => {
+            if (result) {
+                callback(newToken);
+            }
+            else {
+                callback(new ServerErrors.InternalServerError());
+            }
+
+        })
+    }
+
+    verifyAdmin(uname, token, callback) {
+        DataBaseQueries.getAdminToken(this.dbConn, uname, (result) => {
+            console.log(result);
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+            if (result == null) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            if (result !== token) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            callback(true);
+        });
+    }
+
+    verifyEmailTokenAdmin(uname, emailToken, callback) {
+        DataBaseQueries.getAdminEmailToken(this.dbConn, uname, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+            if (result == null) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+            if (result !== emailToken) {
+                callback(new ServerErrors.InvalidToken());
+                return;
+            }
+
+            DataBaseQueries.cancelAdminEmailToken(this.dbConn, uname, (result) => {
+                if (result) {
+                    console.log("Admin email token has been canceled");
+
+                }
+                else {
+                    console.log("Admin email token could not be canceled");
+                }
+            });
+            callback(true);
+        });
+    }
+
+    #addNewTokenAdmin(uname, callback) {
+        let newToken = TokenGenerator.generateToken(20, true);
+        DataBaseQueries.changeAdminToken(this.dbConn, uname, newToken, (result) => {
+            if (result) {
+                callback(newToken);
+            }
+            else {
+                callback(new ServerErrors.InternalServerError());
+            }
+
+        })
+    }
+
+    #authenticateAdmin(uname, masterpwd, callback) {
+        DataBaseQueries.getAdminSalt(this.dbConn, uname, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+
+            let salt = result;
+            let hashedPassword = Hash.hashPlainText(masterpwd, salt);
+
+            DataBaseQueries.getAdminPwdForAuthentication(this.dbConn, uname, (result) => {
+                if (result instanceof ServerErrors.ServerError) {
+                    callback(result);
+                    return;
+                }
+
+                let hashedPasswordDb = result;
+                if (hashedPasswordDb.toString() === hashedPassword.toString()) {
+                    callback(true);
+                }
+                else {
+                    callback(false);
+                    return;
+                }
+            });
+        });
+
+    }
+
+    createAdmin(super_admin_uname, super_admin_token, uname, email, callback) {
+        this.#verifySuperAdmin(super_admin_uname, super_admin_token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+
+            DataBaseQueries.addAdmin(this.dbConn, uname, email, (result) => {
+                if (result !== true) {
+                    callback(result);
+                    return;
+                }
+
+                this.#addNewEmailTokenAdmin(uname, (result) => {
+                    if (result instanceof ServerErrors.ServerError) {
+                        callback(result);
+                        return;
+                    }
+                    let html = '<p>A new admin account has been created, kindly use this <a href="http://localhost:3000/passwordhandler/admin/complete?uname=' + uname + '&token=' + result + '">link</a> to complete the account.</p>'
+                    this.sendMail(email, 'New admin created', '', html, callback);
+                    callback(new ServerErrors.EmailConformationNeeded())
+                });
+
+            });
+
+        });
+    }
+
+    addAdminPassword(uname, email_token, password, callback) {
+        this.verifyEmailTokenAdmin(uname, email_token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+
+            let salt = Hash.generateSalt();
+            let hashedPassword = Hash.hashPlainText(password, salt);
+            DataBaseQueries.addAdminPassword(this.dbConn, uname, hashedPassword, salt, (result) => {
+                if (result !== true) {
+                    callback(result);
+                    return;
+                }
+
+                callback(true);
+            })
+        })
+    }
+
+    loginAdmin(uname, password, ip, callback) {
+        this.#authenticateAdmin(uname, password, (result) => {
+            if (result !== true) {
+                callback(new ServerErrors.InvalidLogin());
+                return;
+            }
+
+            DataBaseQueries.checkIpAdmin(this.dbConn, uname, ip, (result) => {
+                if (result) {
+                    this.#addNewTokenAdmin(uname, (result) => {
+                        if (result instanceof ServerErrors.ServerError) {
+                            callback(result);
+                            return;
+                        }
+
+                        callback(result);
+                        return;
+                    });
+                } else {
+                    DataBaseQueries.getEmailFromUnameAdmin(this.dbConn, uname, (result) => {
+                        if (result instanceof ServerErrors.ServerError) {
+                            callback(result);
+                            return;
+                        }
+
+                        let email = result;
+                        this.#addNewEmailTokenAdmin(uname, (result) => {
+                            if (result instanceof ServerErrors.ServerError) {
+                                callback(result);
+                                return;
+                            }
+
+                            let token = result;
+                            let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?uname=' + uname + '&admin-token=' + token + '&ip=' + ip + '">link</a> to verify the login.</p>'
+                            this.sendMail(email, 'New login location detected', '', html, callback);
+                            callback(new ServerErrors.EmailConformationNeeded())
+                        });
+                    });
+                }
+            });
+
+        });
+    }
+
+    cancelAdminToken(uname, token, callback) {
+        this.verifyAdmin(uname, token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+
+            DataBaseQueries.cancelAdminToken(this.dbConn, uname, (result) => {
+                callback(result);
+            });
+        });
+    }
+
+    confirmIpAdmin(uname, email_token, ip, callback) {
+        this.verifyEmailTokenAdmin(uname, email_token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+
+            DataBaseQueries.addIPAdmin(this.dbConn, uname, ip, (result) => {
+                if (result !== true) {
+                    callback(result);
+                    return;
+                }
+
+                callback(result);
+
+            });
+        });
+    }
+
+    getAdminInfo(uname, token, callback) {
+        this.verifyAdmin(uname, token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+
+            DataBaseQueries.getEmailFromUnameAdmin(this.dbConn, uname, (result) => {
+                if (result instanceof ServerErrors.ServerError) {
+                    callback(result);
+                    return;
+                }
+
+                let email = result;
+
+                DataBaseQueries.isSuperAdmin(this.dbConn, uname, (result) => {
+                    if (result instanceof ServerErrors.ServerError) {
+                        callback(result);
+                        return;
+                    }
+
+                    let isSuperAdmin = result;
+
+                    let adminInfo = {
+                        "uname": uname,
+                        "email": email,
+                        "isSuperAdmin": isSuperAdmin
+                    };
+                    callback(adminInfo);
+                });
+
+            });
+
+        });
+    }
+
+    updateAdmin(uname, new_uname, new_email, password, new_password, token, callback) {
+
+        this.verifyAdmin(uname, token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+            this.#authenticateAdmin(uname, password, (authentication_result) => {
+                DataBaseQueries.getAttributesForUpdateAdmin(this.dbConn, uname, (result) => {
+                    if (result instanceof ServerErrors.ServerError) {
+                        callback(result);
+                        return;
+                    }
+                    console.log("auth " + authentication_result);
+
+                    let email;
+                    let hashed_pwd;
+                    let salt;
+                    try {
+                        email = result["email"];
+                        hashed_pwd = result["hashed_pwd"];
+                        salt = result["salt"];
+                    }
+                    catch (err) {
+                        callback(new ServerErrors.InternalServerError());
+                        return;
+                    }
+                    if (!new_uname) {
+                        new_uname = uname;
+                    }
+                    if (!new_email) {
+                        new_email = email;
+                    }
+
+                    let new_hashed_pwd;
+                    if (!new_password || !password) {
+                        new_hashed_pwd = hashed_pwd;
+                    }
+                    else if (authentication_result !== true) {
+                        callback(new ServerErrors.InvalidLogin());
+                        return;
+                    }
+                    else {
+                        new_hashed_pwd = Hash.hashPlainText(new_password, salt);
+                    }
+                    console.log(new_uname);
+                    console.log(new_email);
+                    console.log(new_hashed_pwd);
+
+                    DataBaseQueries.updateAdmin(this.dbConn, uname, new_uname, new_email, new_hashed_pwd, (result) => {
+                        callback(result);
+                    });
+
+                });
+
+            });
+        });
+    }
+
+    deleteAdmin(uname, admin_token, super_admin_uname, super_admin_token, callback) {
+        if (super_admin_uname && super_admin_token) {
+            this.#verifySuperAdmin(super_admin_uname, super_admin_token, (result) => {
+                if (result !== true) {
+                    callback(result);
+                    return;
+                }
+
+                DataBaseQueries.removeAdmin(this.dbConn, uname, (result) => {
+                    callback(result);
+                });
+            });
+        }
+        else {
+            this.verifyAdmin(uname, admin_token, (result) => {
+                if (result !== true) {
+                    callback(result);
+                    return;
+                }
+
+                DataBaseQueries.removeAdmin(this.dbConn, uname, (result) => {
+                    callback(result);
+                });
+            });
+        }
+    }
+
+    getAdmins(super_admin_uname, super_admin_token, callback) {
+        this.#verifySuperAdmin(super_admin_uname, super_admin_token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+
+            DataBaseQueries.getAllAdmins(this.dbConn, (result) => {
+                if (result instanceof ServerErrors.ServerError) {
+                    callback(result);
+                    return;
+                }
+
+                this.#allAdminsAddIsSuperAdmin(0, result, (result) => {
+                    callback(result);
+
+                })
+            });
+
+        });
+    }
+
+    #allAdminsAddIsSuperAdmin(index, admins, callback) {
+        DataBaseQueries.isSuperAdmin(this.dbConn, admins[index]["uname"], (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                reject();
+                return;
+            }
+
+            admins[index]["isSuperAdmin"] = result;
+            console.log(admins);
+            let nextIndex = index + 1;
+            if (nextIndex >= admins.length) {
+                callback(admins);
+                return;
+            }
+            this.#allAdminsAddIsSuperAdmin(nextIndex, admins, callback);
+        });
+    }
+
+    //--------------------
+
 }
 
-module.exports = BackEndManager;
+module.exports = new BackEndManager();
