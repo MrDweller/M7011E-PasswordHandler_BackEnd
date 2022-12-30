@@ -325,7 +325,7 @@ paths:
           type: string
       - name: user-token
         in: header
-        required: true
+        required: false
         style: simple
         explode: false
         schema:
@@ -333,14 +333,14 @@ paths:
       - name: admin-uname
         in: header
         description: The username of the admin.
-        required: true
+        required: false
         style: simple
         explode: false
         schema:
           type: string
       - name: admin-token
         in: header
-        required: true
+        required: false
         style: simple
         explode: false
         schema:
