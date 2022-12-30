@@ -204,7 +204,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'pwordhandler@gmail.com'
-EMAIL_HOST_PASSWORD = 'ahzx xuws cvmc nihg'
+EMAIL_HOST_PASSWORD = str(os.getenv('EMAIL_HOST_PASSWORD'))
 
 
 # Amazon S3 Cloud Credentials
