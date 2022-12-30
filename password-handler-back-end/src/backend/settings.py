@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = Path('secret_key.txt').read_text()
+SECRET_KEY = str(os.getenv('SECRET_KEY'))
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -208,8 +210,10 @@ EMAIL_HOST_PASSWORD = 'ahzx xuws cvmc nihg'
 # Amazon S3 Cloud Credentials
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
-AWS_QUERYSTRING_AUTH = False
-AWS_ACCESS_KEY_ID = 'AKIAXO64ZB7XVLNMSSAU'
-AWS_SECRET_ACCESS_KEY = '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'
-AWS_STORAGE_BUCKET_NAME = 'passwordhandler'
-AWS_S3_REGION_NAME = 'eu-north-1'
+AWS_QUERYSTRING_AUTH = True
+AWS_ACCESS_KEY_ID = str(os.getenv('AWS_ACCESS_KEY_ID'))
+AWS_SECRET_ACCESS_KEY = str(os.getenv('AWS_SECRET_ACCESS_KEY'))
+AWS_STORAGE_BUCKET_NAME = str(os.getenv('AWS_STORAGE_BUCKET_NAME'))
+AWS_S3_REGION_NAME = str(os.getenv('AWS_S3_REGION_NAME'))
+#AWS_DEFAULT_ACL = None
+AWS_S3_SIGNATURE_VERSION = 's3v4'

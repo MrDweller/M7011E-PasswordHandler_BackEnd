@@ -9,12 +9,20 @@ from django.core.mail import send_mail
 from django.conf import settings
 from smtplib import SMTPException
 
+import boto3
+from botocore.client import Config
+
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import *
 from .serializers import *
+
+import os
+from dotenv import load_dotenv
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
 class UserApiView(APIView):
 
@@ -271,14 +279,13 @@ class UsersApiView(APIView):
 
 
 class PFPView(APIView):
-    def post(self, request, uname, format=None):
+    def get(self, request, uname, format=None):
         try:
             user_object = Users.objects.get(uname=uname)
         except Users.DoesNotExist:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
-        userToken = request.headers.get("admin-token")
-            
+        userToken = request.headers.get("user-token")
         if userToken != user_object.token:
             return Response(status=status.HTTP_403_FORBIDDEN)
         
@@ -286,8 +293,49 @@ class PFPView(APIView):
         if valid_token != True:
             return Response(valid_token, status.HTTP_403_FORBIDDEN)
 
-        if request.method == 'PUT':
-            pass
+        if request.method == 'GET':
+            temp_dict = {}
+            print(user_object.pfpURL)
+            temp_dict["pfpURL"] = user_object.pfpURL
+            return Response(temp_dict, status.HTTP_200_OK)
+
+    def post(self, request, uname, format=None):
+        try:
+            user_object = Users.objects.get(uname=uname)
+        except Users.DoesNotExist:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        userToken = request.headers.get("user-token")
+        if userToken != user_object.token:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        
+        valid_token = check_token_validity_by_timestamp(user_object, False)
+        if valid_token != True:
+            return Response(valid_token, status.HTTP_403_FORBIDDEN)
+
+        #serializer_class = PFPApiSerializer
+
+        if request.method == 'POST':
+            temp_dict = {}
+
+            user_object.pfpURL = "https://passwordhandler.s3.eu-north-1.amazonaws.com/" + user_object.pfpid
+            user_object.save()
+
+            s3_client = boto3.client('s3', aws_access_key_id=str(os.getenv('AWS_ACCESS_KEY_ID')),
+                                     aws_secret_access_key=str(os.getenv('AWS_SECRET_ACCESS_KEY')),
+                                     region_name=str(os.getenv('AWS_S3_REGION_NAME')), 
+                                     config=Config(signature_version='s3v4'))
+
+            response = s3_client.generate_presigned_url('put_object', Params={
+                'Bucket': str(os.getenv('AWS_STORAGE_BUCKET_NAME')),
+                'Key': user_object.pfpid
+            },
+                ExpiresIn=604700)
+            
+            temp_dict["pfp"] = response
+            temp_dict["pfpURL"] = user_object.pfpURL
+            print(temp_dict)
+            return Response(temp_dict, status=status.HTTP_200_OK)
 
 
 class ChangeUsernameApiView(APIView):
