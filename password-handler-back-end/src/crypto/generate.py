@@ -25,6 +25,7 @@ def check_token_validity_by_timestamp(user, isAdmin):
     else:
         cursor.execute("SELECT token_timestamp FROM admins WHERE uname = %s", [user.uname])
     time_in_secs = cursor.fetchone()[0].timestamp()
+    
     if time_in_secs < time.time() - 239028472389: # change time for deployment
 
         """ Not a valid token"""
