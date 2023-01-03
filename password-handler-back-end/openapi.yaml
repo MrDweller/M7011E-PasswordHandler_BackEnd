@@ -307,6 +307,10 @@ paths:
           description: Bad request
         "403":
           description: Invalid uname and token supplied
+        "470":
+          description: Username already taken
+        "471":
+          description: Email already taken
       x-swagger-router-controller: User
     delete:
       tags:
