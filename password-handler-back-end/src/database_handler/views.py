@@ -24,6 +24,7 @@ from dotenv import load_dotenv
 dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
+#Använder
 class UserApiView(APIView):
 
     # A new serializer is created for API input
@@ -217,15 +218,19 @@ class GetUserApiView(APIView):
         except:
             return Response(status=status.HTTP_404_NOT_FOUND)
         
-        if admin == False:
-            userToken = request.headers.get("user-token")
+        if 'HTTP_SUPER_ADMIN_TOKEN' in request.META:
+            userToken = request.headers.get("super-admin-token")
+            superAdmin_object = Admins.objects.get(uname=request.headers.get('super-admin-uname'))
         else:
-            userToken = request.headers.get("admin-token")
-            
-        if userToken != user_object.token:
+            if admin == False:
+                userToken = request.headers.get("user-token")
+            else:
+                userToken = request.headers.get("admin-token")
+
+        if userToken != superAdmin_object.token:
             return Response(status=status.HTTP_403_FORBIDDEN)
         
-        valid_token = check_token_validity_by_timestamp(user_object, admin)
+        valid_token = check_token_validity_by_timestamp(superAdmin_object, True)
         if valid_token != True:
             return Response(valid_token, status=status.HTTP_200_OK)
 
@@ -388,11 +393,23 @@ class AdminsApiView(APIView):
 
             token = check_token_validity_by_timestamp(admin_object, True)
             if admin_object.token != request.headers.get('super-admin-token') or token != True:
-                return Response(status=status.HTTP_403_FORBIDDEN)
+                return Response(status=status.HTTP_403_FORBIDDEN)   
 
-            data = Admins.objects.all()
-            serializer = AdminsSerializer(data, context={'request': request}, many=True)
-            return Response(serializer.data)
+            admins = Admins.objects.all()
+            serializer = AdminsSerializer(admins, context={'request': request}, many=True)
+            temp_dict = serializer.data.copy()
+            count = 0
+
+            for admin in admins:
+                superAdmin = SuperAdmins.objects.filter(uname=admin.uname)
+
+                if not superAdmin:
+                    temp_dict[count]["isSuperAdmin"] = False
+                else:
+                    temp_dict[count]["isSuperAdmin"] = True
+                count = count +1
+
+            return Response(temp_dict)
 
 
 class AdminApiView(APIView):
@@ -788,7 +805,7 @@ class ChangeWebsitePasswordsApiView(APIView):
             connection.commit()
             return Response(status=status.HTTP_200_OK)
 
-
+#använder
 class GetUnameView(APIView):
 
     def get(self, request, identification, format=None):
@@ -810,7 +827,7 @@ class GetUnameView(APIView):
             
             return Response(serializer.data, status=status.HTTP_200_OK)
 
-
+#använder
 class LoginApiView(APIView):
 
     serializer_class = LoginApiSerializer
