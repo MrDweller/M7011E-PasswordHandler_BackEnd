@@ -274,30 +274,28 @@ exports.updateUser = function (body, uname, userToken) {
     let newEmail = body["email"];
     let password = body["password"];
     let newPassword = body["newPassword"];
-    backEndHandler.verifyUser(uname, userToken, (result) => {
+    backEndHandler.updateUser(uname, newUname, newEmail, password, newPassword, userToken, (result) => {
+      if (result instanceof ServerErrors.InvalidLogin) {
+        reject(403);
+        return;
+      }
       if (result instanceof ServerErrors.InvalidToken) {
         reject(403);
+        return;
+      }
+      if (result instanceof ServerErrors.DuplicateEmail) {
+        reject(471);
+        return;
+      }
+      if (result instanceof ServerErrors.DuplicateUname) {
+        reject(470);
+        return;
       }
       if (result instanceof ServerErrors.ServerError) {
         reject(500);
         return;
       }
 
-      if (newUname) {
-        backEndHandler.changeUname(uname, newUname, userToken, (result) => {
-  
-        });
-      }
-      if (newEmail) {
-        backEndHandler.requestEmailChange(uname, newEmail, userToken, (result) => {
-  
-        });
-      }
-      if (newPassword && password) {
-        backEndHandler.changeMasterPassword(uname, userToken, password, newPassword, (result) =>{
-
-        });
-      }
       resolve(200);
 
     });

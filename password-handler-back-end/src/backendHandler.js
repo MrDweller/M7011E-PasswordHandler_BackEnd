@@ -472,6 +472,80 @@ class BackEndManager {
         })
     }
 
+    updateUser(uname, new_uname, new_email, password, new_password, token, callback) {
+        this.verifyUser(uname, token, (result) => {
+            if (result !== true) {
+                callback(result);
+                return;
+            }
+            this.#authenticateUser(uname, password, (authentication_result, dbUname, key) => {
+                DataBaseQueries.getColumsForEncryptingPassword(this.dbConn, uname, (columns) => {
+                    if (columns === null) {
+                        callback(new ServerErrors.InternalServerError());
+                        return;
+                    }
+                    console.log("UPDATE");
+                    DataBaseQueries.getEmailFromUname(this.dbConn, uname, (result) => {
+                        if (result instanceof ServerErrors.ServerError) {
+                            callback(result);
+                            return;
+                        }
+                        let email = result;
+                        DataBaseQueries.getUserPwdForAuthentication(this.dbConn, uname, (result) => {
+                            if (result === false) {
+                                callback(new ServerErrors.InternalServerError());
+                                return;
+                            }
+    
+                            let hashedhashed_masterpwd = result;
+                            let firstSalt = columns["salt_1"];
+                            let secondSalt = columns["salt_2"];
+                            let encrypted_key = columns["encrypted_key"];
+    
+                            if (!new_uname) {
+                                new_uname = uname;
+                            }
+                            if (!new_email) {
+                                new_email = email;
+                            }
+        
+                            let new_hashedhashed_masterpwd;
+                            let new_salt_1;
+                            let new_salt_2;
+                            let new_encrypted_key;
+                            if (!new_password || !password) {
+                                new_hashedhashed_masterpwd = hashedhashed_masterpwd;
+                                new_salt_1 = firstSalt;
+                                new_salt_2 = secondSalt;
+                                new_encrypted_key = encrypted_key;
+                            }
+                            else if (authentication_result !== true) {
+                                callback(new ServerErrors.InvalidLogin());
+                                return;
+                            }
+                            else {
+                                let ivKey = columns["iv"];
+                                new_salt_1 = Hash.generateSalt();
+                                new_salt_2 = Hash.generateSalt();
+            
+                                let hashed_masterpwd = Hash.hashPlainText(new_password, new_salt_1);
+            
+                                new_encrypted_key = AES.encryptData(key, hashed_masterpwd, ivKey);
+                                new_hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, new_salt_2);
+
+                            }
+                            DataBaseQueries.updateUser(this.dbConn, uname, new_uname, new_email, new_hashedhashed_masterpwd, new_salt_1, new_salt_2, new_encrypted_key, (result) => {
+                                callback(result);
+                                return;
+                            });
+    
+                        });
+                    });
+                });
+            });
+        });
+    }
+
     uploadPFP(uname, token, callback) {
         this.verifyUser(uname, token, (result) => {
             console.log(result);

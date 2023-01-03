@@ -75,6 +75,39 @@ class DataBaseQueries {
 
     }
 
+    static updateUser(dbConn, uname, new_uname, new_email, new_hashedhashed_masterpwd, new_salt_1, new_salt_2, new_encrypted_key, callback) {
+        var sql = `UPDATE users SET uname = "${new_uname}", email="${new_email}", hashedhashed_masterpwd="${new_hashedhashed_masterpwd.toString("base64")}", salt_1="${new_salt_1.toString("base64")}" , salt_2="${new_salt_2.toString("base64")}", encrypted_key="${new_encrypted_key.toString("base64")}" where uname = "${uname}" `
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                if (err.errno === MysqlErrorCodes.ER_DUP_ENTRY) {
+                    const errWords = err.sqlMessage.split(" ");
+                    const fieldDB = errWords[5];
+                    
+                    if (fieldDB === "'users.PRIMARY'") {
+                        callback(new ServerErrors.DuplicateUname());
+                        return;
+                    }
+                    if (fieldDB === "'users.email'") {
+                        callback(new ServerErrors.DuplicateEmail());
+                        return;
+                    }
+                    callback(new ServerErrors.InternalServerError());
+                    return;
+                }
+                if (err.errno === MysqlErrorCodes.ER_FOREIGN_DUPLICATE_KEY_WITH_CHILD_INFO) {
+                    callback(new ServerErrors.DuplicateUname());
+                    return;
+                }
+                console.log(err);
+                callback(new ServerErrors.InternalServerError());
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(true);
+            }
+        });
+    }
+
     static changeUname(dbConn, old_uname, new_uname, callback) {
         var sql = `UPDATE users SET uname = "${new_uname}" where uname = "${old_uname}" `
         dbConn.query(sql, (err, result) => {
