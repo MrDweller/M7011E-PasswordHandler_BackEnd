@@ -1,5 +1,3 @@
-const { rsaEncryption } = require('./crypto/rsaEncryption');
-const RsaEncryption = require('./crypto/rsaEncryption');
 const AES = require('./crypto/aes');
 const Hash = require('./crypto/hash');
 const PasswordGenerator = require('./passwordGenerator');
@@ -7,13 +5,8 @@ const TokenGenerator = require('./tokenGenerator');
 const fs = require('fs');
 const MySQL = require('mysql');
 const DataBaseQueries = require('./DataBaseQueries');
-const { response, json } = require('express');
 const nodemailer = require('nodemailer');
-const crypto = require('crypto');
-const multer = require('multer');
-const multerS3 = require('multer-s3');
 const aws = require('aws-sdk');
-const { url } = require('inspector');
 require('dotenv').config();
 
 
@@ -39,48 +32,9 @@ class BackEndManager {
         });
 
 
-
-
     }
 
-    // #readPrivateRsaKey() {
-    //     return fs.readFileSync('./privateServerKey');
-    // }
-
-    // generateServerKeys() {
-    //     let rsaKeys = RsaEncryption.generateRSA();
-    //     let publicKey = rsaKeys[RsaEncryption.PUBLIC_RSA_KEY_IDENTIFIER];
-    //     let privateKey = rsaKeys[RsaEncryption.PRIVATE_RSA_KEY_IDENTIFIER];
-    //     fs.writeFileSync('./publicServerKey', publicKey, err => {
-    //         if (err) {
-    //             console.error(err);
-    //         }
-    //     });
-    //     fs.writeFileSync('./privateServerKey', privateKey, err => {
-    //         if (err) {
-    //             console.error(err);
-    //         }
-    //     });
-
-    // }
-
-    // getPublicServerKey() {
-    //     return fs.readFileSync('./publicServerKey');
-    // }
-
     addUser(uname, email, masterpwd, userIP, callback) {
-        // let secretData = jsonData["secretData"];
-        // let publicData = jsonData["publicData"];
-
-        // let privateRsaKey = this.#readPrivateRsaKey();
-        // let decryptedData = RsaEncryption.rsaDecryptJsonObject(privateRsaKey, secretData);
-
-        // let decryptedData = jsonData;
-
-        // let uname = decryptedData["uname"];
-        // let email = decryptedData["email"];
-        // let masterpwd = decryptedData["password"];
-        // let userIP = decryptedData["userIP"]
 
         let key = AES.generateKey();
         let ivKey = AES.generateIv();
@@ -755,7 +709,6 @@ class BackEndManager {
             if (uname === null) {
                 callback(false);
             } else {
-                //let token = crypto.randomBytes(20).toString('base64'); /DO NOT USE THIS
                 DataBaseQueries.changeUserToken(this.dbConn, jsonData["email"], token, (result) => {
                     if (result) {
                         let html = '<p>You requested for reset password, kindly use this <a href="http://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/passwordhandler/reset-password?token=' + token + '">link</a> to reset your password</p>'
