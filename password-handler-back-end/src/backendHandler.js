@@ -725,15 +725,15 @@ class BackEndManager {
     sendMail(email, subject, msg, html, callback) {
 
         var transporter = nodemailer.createTransport({
-            service: 'gmail',
+            service: this.config["mailConfig"]["service"],
             auth: {
-                user: 'pwordhandler@gmail.com',
+                user: this.config["mailConfig"]["mail"],
                 pass: process.env.EMIAL_HOST_PASSWORD
             }
         });
 
         var mailOptions = {
-            from: 'pwordhandler@gmail.com',
+            from: this.config["mailConfig"]["mail"],
             to: email,
             subject: subject,
             text: msg,

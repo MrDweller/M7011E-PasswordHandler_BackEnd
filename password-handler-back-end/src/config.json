@@ -16,5 +16,9 @@
     "s3Config" : {
         "region" : "eu-north-1",
         "bucketName" : "passwordhandler"
+    },
+    "mailConfig": {
+        "mail": "pwordhandler@gmail.com",
+        "service": "gmail"
     }
 }
