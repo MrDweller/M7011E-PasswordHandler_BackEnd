@@ -65,6 +65,15 @@ A general description for setup and installation is described below. During deve
    # generating and printing the SECRET_KEY
    print(get_random_secret_key())
    ```
+   
+   Since we use SMTP for 2FA you will have to enter a valid email at the bottom in the file `src/backend/settings.py` and enter the corresponding                 **password** for that email in `.env` file under:  
+   
+   ```
+   EMAIL_HOST_PASSWORD=Required
+   ```
+   **NOTE!**
+   
+   You may have to generate a google app password and replace is with the `EMAIL_HOST_PASSWORD` in the above step, which can be done by [following these steps](https://support.google.com/accounts/answer/185833?hl=en).
 
 ## Database Setup
 
@@ -82,4 +91,4 @@ A general description for setup and installation is described below. During deve
    python manage.py runserver 8080   
    ```
 4. This completes the steps for setting up and running the back-end part developed with django. To start the front-end follow the steps in this link:
-[M7011E-PasswordHandler_FrontEnd](https://github.com/MrDweller/M7011E-PasswordHandler_FrontEnd)
+[M7011E-PasswordHandler_FrontEnd](https://github.com/MrDweller/M7011E-PasswordHandler_FrontEnd).
