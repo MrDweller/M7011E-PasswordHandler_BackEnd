@@ -1,0 +1,25 @@
+node_modules
+privateServerKey
+publicServerKey
+env/
+secret_key.txt
+
+# Django #
+*.log
+*.pot
+*.pyc
+__pycache__
+db.sqlite3
+media
+
+# pyenv 
+.python-version 
+
+
+# Visual Studio Code # 
+.vscode/* 
+!.vscode/settings.json 
+!.vscode/tasks.json 
+!.vscode/launch.json 
+!.vscode/extensions.json 
+.history
