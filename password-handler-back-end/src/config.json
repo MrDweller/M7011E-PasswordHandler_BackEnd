@@ -3,6 +3,10 @@
         "host" : "127.0.0.1",
         "port" : 8080
     },
+    "frontendSettings" : {
+        "host" : "localhost",
+        "port" : 3000
+    },
     "databaseConnection" : {
         "host": "localhost",
         "user": "root",
@@ -11,8 +15,10 @@
     },
     "s3Config" : {
         "region" : "eu-north-1",
-        "bucketName" : "passwordhandler",
-        "access_key" : "AKIAXO64ZB7XVLNMSSAU",
-        "access_key_secret" : "" 
+        "bucketName" : "passwordhandler"
+    },
+    "mailConfig": {
+        "mail": "pwordhandler@gmail.com",
+        "service": "gmail"
     }
 }

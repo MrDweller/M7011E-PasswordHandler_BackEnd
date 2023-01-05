@@ -1,5 +1,3 @@
-const { rsaEncryption } = require('./crypto/rsaEncryption');
-const RsaEncryption = require('./crypto/rsaEncryption');
 const AES = require('./crypto/aes');
 const Hash = require('./crypto/hash');
 const PasswordGenerator = require('./passwordGenerator');
@@ -7,13 +5,9 @@ const TokenGenerator = require('./tokenGenerator');
 const fs = require('fs');
 const MySQL = require('mysql');
 const DataBaseQueries = require('./DataBaseQueries');
-const { response, json } = require('express');
 const nodemailer = require('nodemailer');
-const crypto = require('crypto');
-const multer = require('multer');
-const multerS3 = require('multer-s3');
 const aws = require('aws-sdk');
-const { url } = require('inspector');
+require('dotenv').config();
 
 
 const ServerErrors = require('./errors');
@@ -21,12 +15,12 @@ const { InvalidToken } = require('./errors');
 
 class BackEndManager {
     constructor() {
-        let config = JSON.parse(fs.readFileSync("./src/config.json"));
+        this.config = JSON.parse(fs.readFileSync("./src/config.json"));
         this.dbConn = MySQL.createConnection({
-            host: config["databaseConnection"]["host"],
-            user: config["databaseConnection"]["user"],
-            password: config["databaseConnection"]["password"],
-            database: config["databaseConnection"]["database"]
+            host: this.config["databaseConnection"]["host"],
+            user: this.config["databaseConnection"]["user"],
+            password: this.config["databaseConnection"]["password"],
+            database: this.config["databaseConnection"]["database"]
         });
         this.dbConn.connect((err) => {
             if (err) {
@@ -38,48 +32,9 @@ class BackEndManager {
         });
 
 
-
-
     }
 
-    // #readPrivateRsaKey() {
-    //     return fs.readFileSync('./privateServerKey');
-    // }
-
-    // generateServerKeys() {
-    //     let rsaKeys = RsaEncryption.generateRSA();
-    //     let publicKey = rsaKeys[RsaEncryption.PUBLIC_RSA_KEY_IDENTIFIER];
-    //     let privateKey = rsaKeys[RsaEncryption.PRIVATE_RSA_KEY_IDENTIFIER];
-    //     fs.writeFileSync('./publicServerKey', publicKey, err => {
-    //         if (err) {
-    //             console.error(err);
-    //         }
-    //     });
-    //     fs.writeFileSync('./privateServerKey', privateKey, err => {
-    //         if (err) {
-    //             console.error(err);
-    //         }
-    //     });
-
-    // }
-
-    // getPublicServerKey() {
-    //     return fs.readFileSync('./publicServerKey');
-    // }
-
     addUser(uname, email, masterpwd, userIP, callback) {
-        // let secretData = jsonData["secretData"];
-        // let publicData = jsonData["publicData"];
-
-        // let privateRsaKey = this.#readPrivateRsaKey();
-        // let decryptedData = RsaEncryption.rsaDecryptJsonObject(privateRsaKey, secretData);
-
-        // let decryptedData = jsonData;
-
-        // let uname = decryptedData["uname"];
-        // let email = decryptedData["email"];
-        // let masterpwd = decryptedData["password"];
-        // let userIP = decryptedData["userIP"]
 
         let key = AES.generateKey();
         let ivKey = AES.generateIv();
@@ -287,7 +242,7 @@ class BackEndManager {
                                     callback(new ServerErrors.InternalServerError());
                                     return;
                                 }
-                                let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?uname=' + uname + '&token=' + token + '&ip=' + userIP + '">link</a> to verify the login.</p>'
+                                let html = '<p>A login in a new location have been detected, kindly use this <a href="http://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/passwordhandler/confirmIP?uname=' + uname + '&token=' + token + '&ip=' + userIP + '">link</a> to verify the login.</p>'
                                 this.sendMail(email, 'New login location detected', '', html, callback);
                                 callback(new ServerErrors.EmailConformationNeeded())
                             });
@@ -574,9 +529,9 @@ class BackEndManager {
                     config["databaseConnection"]["host"];
                     const region = config["s3Config"]["region"];
                     const bucketName = config["s3Config"]["bucketName"];
-                    const accessKeyId = config["s3Config"]["access_key"];
+                    const accessKeyId = process.env.AWS_ACCESS_KEY;
 
-                    const secretAccessKey = config["s3Config"]["access_key_secret"];
+                    const secretAccessKey = process.env.AWS_ACCESS_KEY_SECRET;
 
                     const s3 = new aws.S3({
                         region,
@@ -639,7 +594,7 @@ class BackEndManager {
 
     #verifyEmail(uname, email, callback) {
         this.#addNewEmailToken(uname, (email_token) => {
-            let html = '<p>You must confirm your email, kindly use this <a href="http://localhost:3000/verifyEmail?uname=' + uname + '&email_token=' + email_token + '&email=' + email + '">link</a> to verify the your email.</p>'
+            let html = '<p>You must confirm your email, kindly use this <a href="http://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/verifyEmail?uname=' + uname + '&email_token=' + email_token + '&email=' + email + '">link</a> to verify the your email.</p>'
             this.sendMail(email, 'New email detected', '', html, callback);
         });
     }
@@ -754,10 +709,9 @@ class BackEndManager {
             if (uname === null) {
                 callback(false);
             } else {
-                //let token = crypto.randomBytes(20).toString('base64'); /DO NOT USE THIS
                 DataBaseQueries.changeUserToken(this.dbConn, jsonData["email"], token, (result) => {
                     if (result) {
-                        let html = '<p>You requested for reset password, kindly use this <a href="http://localhost:3000/passwordhandler/reset-password?token=' + token + '">link</a> to reset your password</p>'
+                        let html = '<p>You requested for reset password, kindly use this <a href="http://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/passwordhandler/reset-password?token=' + token + '">link</a> to reset your password</p>'
                         this.sendMail(jsonData["email"], jsonData["subject"], jsonData["msg"], html, callback);
                     } else {
                         this.resetPassword(jsonData, callback);
@@ -771,15 +725,15 @@ class BackEndManager {
     sendMail(email, subject, msg, html, callback) {
 
         var transporter = nodemailer.createTransport({
-            service: 'gmail',
+            service: this.config["mailConfig"]["service"],
             auth: {
-                user: 'pwordhandler@gmail.com',
-                pass: 'gfyn jmue xwrm ihtz'
+                user: this.config["mailConfig"]["mail"],
+                pass: process.env.EMIAL_HOST_PASSWORD
             }
         });
 
         var mailOptions = {
-            from: 'pwordhandler@gmail.com',
+            from: this.config["mailConfig"]["mail"],
             to: email,
             subject: subject,
             text: msg,
@@ -935,7 +889,7 @@ class BackEndManager {
                         callback(result);
                         return;
                     }
-                    let html = '<p>A new admin account has been created, kindly use this <a href="http://localhost:3000/passwordhandler/admin/complete?uname=' + uname + '&token=' + result + '">link</a> to complete the account.</p>'
+                    let html = '<p>A new admin account has been created, kindly use this <a href="http://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/passwordhandler/admin/complete?uname=' + uname + '&token=' + result + '">link</a> to complete the account.</p>'
                     this.sendMail(email, 'New admin created', '', html, callback);
                     callback(new ServerErrors.EmailConformationNeeded())
                 });
@@ -998,7 +952,7 @@ class BackEndManager {
                             }
 
                             let token = result;
-                            let html = '<p>A login in a new location have been detected, kindly use this <a href="http://localhost:3000/passwordhandler/confirmIP?uname=' + uname + '&admin-token=' + token + '&ip=' + ip + '">link</a> to verify the login.</p>'
+                            let html = '<p>A login in a new location have been detected, kindly use this <a href="http://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/passwordhandler/confirmIP?uname=' + uname + '&admin-token=' + token + '&ip=' + ip + '">link</a> to verify the login.</p>'
                             this.sendMail(email, 'New login location detected', '', html, callback);
                             callback(new ServerErrors.EmailConformationNeeded())
                         });
