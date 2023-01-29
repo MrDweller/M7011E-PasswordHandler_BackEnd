@@ -4,6 +4,7 @@ publicServerKey
 env/
 secret_key.txt
 .env
+keys
 
 # Django #
 *.log
