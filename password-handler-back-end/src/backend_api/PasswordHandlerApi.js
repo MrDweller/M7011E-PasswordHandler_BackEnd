@@ -1,12 +1,14 @@
 const express = require('express');
 
 const path = require('path');
-const http = require('http');
+const https = require('https');
 const oas3Tools = require('oas3-tools');
 
 const cors = require('cors');
 const BackEndHandler = require('../backendHandler')
 const InvalidToken = require('../errors');
+
+const fs = require('fs');
 
 class PasswordHandlerApi {
     constructor(host, port) {
@@ -38,6 +40,10 @@ class PasswordHandlerApi {
             this.app._router.stack.push(openApiApp._router.stack[i])
         }
 
+        this.appOptions = {
+            key: fs.readFileSync('./src/backend_api/keys/key.pem'),
+            cert: fs.readFileSync('./src/backend_api/keys/certificate.pem')
+        };
     }
 
     start() {
@@ -45,9 +51,9 @@ class PasswordHandlerApi {
         let port = this.port;
 
         // Initialize the Swagger middleware
-        http.createServer(this.app).listen(this.port, this.host, function () {
-            console.log('Your server is listening on port %d (http://%s:%d)', port, host, port);
-            console.log('Swagger-ui is available on http://%s:%d/docs', host, port);
+        https.createServer(this.appOptions, this.app).listen(this.port, this.host, function () {
+            console.log('Your server is listening on port %d (https://%s:%d)', port, host, port);
+            console.log('Swagger-ui is available on https://%s:%d/docs', host, port);
         });
 
     }

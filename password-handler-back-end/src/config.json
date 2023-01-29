@@ -18,7 +18,7 @@
         "bucketName" : "passwordhandler"
     },
     "mailConfig": {
-        "mail": "pwordhandler@gmail.com",
+        "mail": "pass.handler.word@gmail.com",
         "service": "gmail"
     }
 }
