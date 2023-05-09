@@ -40,9 +40,11 @@ class PasswordHandlerApi {
             this.app._router.stack.push(openApiApp._router.stack[i])
         }
 
+        let config = JSON.parse(fs.readFileSync("./src/config.json"));
+
         this.appOptions = {
-            key: fs.readFileSync('./src/backend_api/keys/key.pem'),
-            cert: fs.readFileSync('./src/backend_api/keys/certificate.pem')
+            key: fs.readFileSync(config["ssl"]["key"]),
+            cert: fs.readFileSync(config["ssl"]["cert"])
         };
     }
 
