@@ -245,7 +245,7 @@ class BackEndManager {
                                     callback(new ServerErrors.InternalServerError());
                                     return;
                                 }
-                                let html = '<p>A login in a new location have been detected, kindly use this <a href="http://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/passwordhandler/confirmIP?uname=' + uname + '&token=' + token + '&ip=' + userIP + '">link</a> to verify the login.</p>'
+                                let html = '<p>A login in a new location have been detected, kindly use this <a href="https://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/passwordhandler/confirmIP?uname=' + uname + '&token=' + token + '&ip=' + userIP + '">link</a> to verify the login.</p>'
                                 this.sendMail(email, 'New login location detected', '', html, callback);
                                 callback(new ServerErrors.EmailConformationNeeded())
                             });
@@ -597,7 +597,7 @@ class BackEndManager {
 
     #verifyEmail(uname, email, callback) {
         this.#addNewEmailToken(uname, (email_token) => {
-            let html = '<p>You must confirm your email, kindly use this <a href="http://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/verifyEmail?uname=' + uname + '&email_token=' + email_token + '&email=' + email + '">link</a> to verify the your email.</p>'
+            let html = '<p>You must confirm your email, kindly use this <a href="https://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/verifyEmail?uname=' + uname + '&email_token=' + email_token + '&email=' + email + '">link</a> to verify the your email.</p>'
             this.sendMail(email, 'New email detected', '', html, callback);
         });
     }
@@ -714,7 +714,7 @@ class BackEndManager {
             } else {
                 DataBaseQueries.changeUserToken(this.dbConn(), jsonData["email"], token, (result) => {
                     if (result) {
-                        let html = '<p>You requested for reset password, kindly use this <a href="http://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/passwordhandler/reset-password?token=' + token + '">link</a> to reset your password</p>'
+                        let html = '<p>You requested for reset password, kindly use this <a href="https://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/passwordhandler/reset-password?token=' + token + '">link</a> to reset your password</p>'
                         this.sendMail(jsonData["email"], jsonData["subject"], jsonData["msg"], html, callback);
                     } else {
                         this.resetPassword(jsonData, callback);
@@ -892,7 +892,7 @@ class BackEndManager {
                         callback(result);
                         return;
                     }
-                    let html = '<p>A new admin account has been created, kindly use this <a href="http://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/passwordhandler/admin/complete?uname=' + uname + '&token=' + result + '">link</a> to complete the account.</p>'
+                    let html = '<p>A new admin account has been created, kindly use this <a href="https://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/passwordhandler/admin/complete?uname=' + uname + '&token=' + result + '">link</a> to complete the account.</p>'
                     this.sendMail(email, 'New admin created', '', html, callback);
                     callback(new ServerErrors.EmailConformationNeeded())
                 });
@@ -955,7 +955,7 @@ class BackEndManager {
                             }
 
                             let token = result;
-                            let html = '<p>A login in a new location have been detected, kindly use this <a href="http://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/passwordhandler/confirmIP?uname=' + uname + '&admin-token=' + token + '&ip=' + ip + '">link</a> to verify the login.</p>'
+                            let html = '<p>A login in a new location have been detected, kindly use this <a href="https://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/passwordhandler/confirmIP?uname=' + uname + '&admin-token=' + token + '&ip=' + ip + '">link</a> to verify the login.</p>'
                             this.sendMail(email, 'New login location detected', '', html, callback);
                             callback(new ServerErrors.EmailConformationNeeded())
                         });
