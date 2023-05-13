@@ -17,7 +17,7 @@ class BackEndManager {
     constructor() {
         this.config = JSON.parse(fs.readFileSync("./src/config.json"));
 
-        handleDisconnect();
+        this.handleDisconnect();
 
     }
 
@@ -31,14 +31,14 @@ class BackEndManager {
         this.dbConn.connect(function(err) {              
             if(err) {                                    
                 console.log('error when connecting to db:', err);
-                setTimeout(handleDisconnect, 2000); 
+                setTimeout(this.handleDisconnect, 2000); 
             }                                   
         });                                    
                                            
         this.dbConn.on('error', function(err) {
             console.log('db error', err);
             if(err.code === 'PROTOCOL_CONNECTION_LOST') { 
-                handleDisconnect();                        
+                this.handleDisconnect();                        
             } else {                                      
                 throw err;                                 
             }
