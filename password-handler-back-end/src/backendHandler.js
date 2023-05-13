@@ -3,12 +3,11 @@ const Hash = require('./crypto/hash');
 const PasswordGenerator = require('./passwordGenerator');
 const TokenGenerator = require('./tokenGenerator');
 const fs = require('fs');
-const MySQL = require('mysql');
 const DataBaseQueries = require('./DataBaseQueries');
 const nodemailer = require('nodemailer');
 const aws = require('aws-sdk');
 require('dotenv').config();
-require('./dbConn.js')
+const dbConn = require('./dbConn.js')
 
 
 const ServerErrors = require('./errors');
