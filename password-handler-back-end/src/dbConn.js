@@ -34,3 +34,4 @@ function handleDisconnect() {
 }
 
 handleDisconnect();
+module.exports = {connection}
