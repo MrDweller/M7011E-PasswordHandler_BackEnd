@@ -1,4 +1,5 @@
 const fs = require('fs');
+const MySQL = require('mysql');
 var config = JSON.parse(fs.readFileSync("./src/config.json"));
 var db_config = {
     host: config["databaseConnection"]["host"],
@@ -10,7 +11,7 @@ var db_config = {
 var connection;
 
 function handleDisconnect() {
-    connection = mysql.createConnection(db_config); 
+    connection = MySQL.createConnection(db_config); 
 
     connection.connect(function (err) {             
         if (err) {                                     
