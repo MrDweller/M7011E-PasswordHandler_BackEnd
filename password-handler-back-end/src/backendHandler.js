@@ -17,11 +17,11 @@ class BackEndManager {
     constructor() {
         this.config = JSON.parse(fs.readFileSync("./src/config.json"));
 
-        this.handleDisconnect();
+        this.handleDisconnect(this);
 
     }
 
-    handleDisconnect() {
+    handleDisconnect(backEndManager) {
         this.dbConn = MySQL.createConnection({
             host: this.config["databaseConnection"]["host"],
             user: this.config["databaseConnection"]["user"],
@@ -38,7 +38,7 @@ class BackEndManager {
         this.dbConn.on('error', function(err) {
             console.log('db error', err);
             if(err.code === 'PROTOCOL_CONNECTION_LOST') { 
-                this.handleDisconnect();                        
+                backEndManager.handleDisconnect();                        
             } else {                                      
                 throw err;                                 
             }
