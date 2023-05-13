@@ -22,7 +22,6 @@ class BackEndManager {
     }
 
     handleDisconnect() {
-        console.log(this);
         this.dbConn = MySQL.createConnection({
             host: this.config["databaseConnection"]["host"],
             user: this.config["databaseConnection"]["user"],
@@ -39,7 +38,7 @@ class BackEndManager {
         this.dbConn.on('error', function(err) {
             console.log('db error', err);
             if(err.code === 'PROTOCOL_CONNECTION_LOST') { 
-                this.handleDisconnect();                        
+                handleDisconnect();                        
             } else {                                      
                 throw err;                                 
             }
