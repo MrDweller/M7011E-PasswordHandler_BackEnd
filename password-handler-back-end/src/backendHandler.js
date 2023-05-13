@@ -41,6 +41,7 @@ class BackEndManager {
     } 
 
     #getDbConn() {
+        console.log("DB CONN!");
         if (this.dbConn.state === 'disconnected') {
             this.dbConn = this.#makeConnection();
         }
