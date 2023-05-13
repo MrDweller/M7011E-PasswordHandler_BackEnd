@@ -8,6 +8,7 @@ const DataBaseQueries = require('./DataBaseQueries');
 const nodemailer = require('nodemailer');
 const aws = require('aws-sdk');
 require('dotenv').config();
+require('./dbConn.js')
 
 
 const ServerErrors = require('./errors');
@@ -17,32 +18,6 @@ class BackEndManager {
     constructor() {
         this.config = JSON.parse(fs.readFileSync("./src/config.json"));
 
-        this.handleDisconnect();
-
-    }
-
-    handleDisconnect() {
-        this.dbConn = MySQL.createConnection({
-            host: this.config["databaseConnection"]["host"],
-            user: this.config["databaseConnection"]["user"],
-            password: this.config["databaseConnection"]["password"],
-            database: this.config["databaseConnection"]["database"]
-        });
-        this.dbConn.connect(function(err) {              
-            if(err) {                                    
-                console.log('error when connecting to db:', err);
-                setTimeout(this.handleDisconnect, 2000); 
-            }                                   
-        });                                    
-                                           
-        this.dbConn.on('error', function(err) {
-            console.log('db error', err);
-            if(err.code === 'PROTOCOL_CONNECTION_LOST') { 
-                handleDisconnect();                        
-            } else {                                      
-                throw err;                                 
-            }
-        });
     }
 
     addUser(uname, email, masterpwd, userIP, callback) {
@@ -60,12 +35,12 @@ class BackEndManager {
         console.log("UNAME addUser() " + uname);
 
         try {
-            DataBaseQueries.addUser(this.dbConn, uname, email, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, ivKey, (result) => {
+            DataBaseQueries.addUser(dbConn.connection, uname, email, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, ivKey, (result) => {
                 if (result instanceof ServerErrors.ServerError) {
                     callback(result);
                     return;
                 }
-                DataBaseQueries.addIP(this.dbConn, uname, userIP, (result) => {
+                DataBaseQueries.addIP(dbConn.connection, uname, userIP, (result) => {
                     if (result instanceof ServerErrors.ServerError) {
                         callback(result);
                         return;
@@ -96,7 +71,7 @@ class BackEndManager {
                 callback(new ServerErrors.InternalServerError());
                 return;
             }
-            DataBaseQueries.addIP(this.dbConn, uname, userIP, (result) => {
+            DataBaseQueries.addIP(dbConn.connection, uname, userIP, (result) => {
                 if (result === true) {
                     callback(true)
                 } else {
@@ -114,7 +89,7 @@ class BackEndManager {
                     return;
                 }
 
-                DataBaseQueries.removeUser(this.dbConn, uname, (result) => {
+                DataBaseQueries.removeUser(dbConn.connection, uname, (result) => {
                     callback(result);
                 });
             });
@@ -130,7 +105,7 @@ class BackEndManager {
                     return;
                 }
     
-                DataBaseQueries.removeUser(this.dbConn, uname, (result) => {
+                DataBaseQueries.removeUser(dbConn.connection, uname, (result) => {
                     callback(result);
                 });
     
@@ -150,7 +125,7 @@ class BackEndManager {
                 return;
             }
 
-            DataBaseQueries.getEmailFromUname(this.dbConn, uname, (result) => {
+            DataBaseQueries.getEmailFromUname(dbConn.connection, uname, (result) => {
                 if (result instanceof ServerErrors.ServerError) {
                     callback(result);
                     return;
@@ -176,7 +151,7 @@ class BackEndManager {
                 return;
             }
 
-            DataBaseQueries.getAllUsers(this.dbConn, (result) => {
+            DataBaseQueries.getAllUsers(dbConn.connection, (result) => {
                 callback(result);
             });
 
@@ -184,7 +159,7 @@ class BackEndManager {
     }
 
     verifyUser(uname, token, callback) {
-        DataBaseQueries.getUserToken(this.dbConn, uname, (result) => {
+        DataBaseQueries.getUserToken(dbConn.connection, uname, (result) => {
             console.log(result);
             if (result instanceof ServerErrors.ServerError) {
                 callback(result);
@@ -203,7 +178,7 @@ class BackEndManager {
     }
 
     verifyEmailToken(uname, emailToken, callback) {
-        DataBaseQueries.getUserEmailToken(this.dbConn, uname, (result) => {
+        DataBaseQueries.getUserEmailToken(dbConn.connection, uname, (result) => {
             if (result instanceof ServerErrors.ServerError) {
                 callback(result);
                 return;
@@ -225,7 +200,7 @@ class BackEndManager {
         // let identification = decryptedData["identification"];
         // let masterpwd = decryptedData["password"];
         // let userIP = decryptedData["userIP"]   
-        DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (result) => {
+        DataBaseQueries.getUnameFromIdentification(dbConn.connection, identification, (result) => {
             if (result instanceof ServerErrors.ServerError) {
                 callback(result);
                 return;
@@ -237,7 +212,7 @@ class BackEndManager {
                     callback(new ServerErrors.InvalidLogin());
                     return;
                 }
-                DataBaseQueries.checkIPofUser(this.dbConn, uname, userIP, (result) => {
+                DataBaseQueries.checkIPofUser(dbConn.connection, uname, userIP, (result) => {
                     if (result) {
                         this.#addNewToken(uname, (token) => {
                             if (token === null) {
@@ -247,7 +222,7 @@ class BackEndManager {
                             callback(token);
                         })
                     } else {
-                        DataBaseQueries.getEmailFromUname(this.dbConn, uname, (email) => {
+                        DataBaseQueries.getEmailFromUname(dbConn.connection, uname, (email) => {
                             this.#addNewEmailToken(uname, (token) => {
                                 if (token === null) {
                                     callback(new ServerErrors.InternalServerError());
@@ -281,7 +256,7 @@ class BackEndManager {
                 return;
             }
 
-            DataBaseQueries.cancelUserToken(this.dbConn, uname, (result) => {
+            DataBaseQueries.cancelUserToken(dbConn.connection, uname, (result) => {
                 callback(result);
             });
         });
@@ -289,7 +264,7 @@ class BackEndManager {
 
     #addNewToken(uname, callback) {
         let newToken = TokenGenerator.generateToken(20, true);
-        DataBaseQueries.changeUserToken(this.dbConn, uname, newToken, (result) => {
+        DataBaseQueries.changeUserToken(dbConn.connection, uname, newToken, (result) => {
             if (result) {
                 callback(newToken);
             }
@@ -302,7 +277,7 @@ class BackEndManager {
 
     #addNewEmailToken(uname, callback) {
         let newToken = TokenGenerator.generateToken(20, true);
-        DataBaseQueries.changeUserEmailToken(this.dbConn, uname, newToken, (result) => {
+        DataBaseQueries.changeUserEmailToken(dbConn.connection, uname, newToken, (result) => {
             if (result) {
                 callback(newToken);
             }
@@ -327,7 +302,7 @@ class BackEndManager {
                 return;
             }
 
-            DataBaseQueries.getAllWebsitePasswords(this.dbConn, uname, (result) => {
+            DataBaseQueries.getAllWebsitePasswords(dbConn.connection, uname, (result) => {
                 callback(result);
             });
         });
@@ -336,7 +311,7 @@ class BackEndManager {
     }
 
     readUserName(identification, callback) {
-        DataBaseQueries.getUnameFromIdentification(this.dbConn, identification, (result) => {
+        DataBaseQueries.getUnameFromIdentification(dbConn.connection, identification, (result) => {
             callback(result);
         });
     }
@@ -362,7 +337,7 @@ class BackEndManager {
                     callback(null);
                     return;
                 }
-                DataBaseQueries.getColumsForEncryptingPassword(this.dbConn, uname, (columns) => {
+                DataBaseQueries.getColumsForEncryptingPassword(dbConn.connection, uname, (columns) => {
                     if (columns === null) {
                         callback(false);
                         return;
@@ -376,7 +351,7 @@ class BackEndManager {
 
                     let encryptedKey = AES.encryptData(key, hashed_masterpwd, ivKey);
                     let hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, secondSalt);
-                    DataBaseQueries.changePasswordUser(this.dbConn, uname, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, (result) => {
+                    DataBaseQueries.changePasswordUser(dbConn.connection, uname, hashedhashed_masterpwd, firstSalt, secondSalt, encryptedKey, (result) => {
                         if (result === null) {
                             callback(false);
                             return;
@@ -405,7 +380,7 @@ class BackEndManager {
                 return;
             }
 
-            DataBaseQueries.changeUname(this.dbConn, uname, new_uname, (result) => {
+            DataBaseQueries.changeUname(dbConn.connection, uname, new_uname, (result) => {
                 callback(result);
             })
         });
@@ -445,19 +420,19 @@ class BackEndManager {
                 return;
             }
             this.#authenticateUser(uname, password, (authentication_result, dbUname, key) => {
-                DataBaseQueries.getColumsForEncryptingPassword(this.dbConn, uname, (columns) => {
+                DataBaseQueries.getColumsForEncryptingPassword(dbConn.connection, uname, (columns) => {
                     if (columns === null) {
                         callback(new ServerErrors.InternalServerError());
                         return;
                     }
                     console.log("UPDATE");
-                    DataBaseQueries.getEmailFromUname(this.dbConn, uname, (result) => {
+                    DataBaseQueries.getEmailFromUname(dbConn.connection, uname, (result) => {
                         if (result instanceof ServerErrors.ServerError) {
                             callback(result);
                             return;
                         }
                         let email = result;
-                        DataBaseQueries.getUserPwdForAuthentication(this.dbConn, uname, (result) => {
+                        DataBaseQueries.getUserPwdForAuthentication(dbConn.connection, uname, (result) => {
                             if (result === false) {
                                 callback(new ServerErrors.InternalServerError());
                                 return;
@@ -500,7 +475,7 @@ class BackEndManager {
                                 new_hashedhashed_masterpwd = Hash.hashPlainText(hashed_masterpwd, new_salt_2);
 
                             }
-                            DataBaseQueries.updateUser(this.dbConn, uname, new_uname, new_email, new_hashedhashed_masterpwd, new_salt_1, new_salt_2, new_encrypted_key, (result) => {
+                            DataBaseQueries.updateUser(dbConn.connection, uname, new_uname, new_email, new_hashedhashed_masterpwd, new_salt_1, new_salt_2, new_encrypted_key, (result) => {
                                 callback(result);
                                 return;
                             });
@@ -519,7 +494,7 @@ class BackEndManager {
                 callback(result);
                 return;
             }
-            DataBaseQueries.getPFPID(this.dbConn, uname, (result) => {
+            DataBaseQueries.getPFPID(dbConn.connection, uname, (result) => {
                 console.log(result);
 
 
@@ -528,7 +503,7 @@ class BackEndManager {
                     return;
                 }
                 let pfpid = result;
-                DataBaseQueries.addPFPURL(this.dbConn, uname, pfpid, (result) => {
+                DataBaseQueries.addPFPURL(dbConn.connection, uname, pfpid, (result) => {
                     console.log(result);
                     if (result !== true) {
                         callback(result);
@@ -595,7 +570,7 @@ class BackEndManager {
                 return;
             }
         
-            DataBaseQueries.getPFPURL(this.dbConn, uname, (result) => {
+            DataBaseQueries.getPFPURL(dbConn.connection, uname, (result) => {
                 callback(result);
     
             });
@@ -631,7 +606,7 @@ class BackEndManager {
                     callback(null);
                     return;
                 }
-                DataBaseQueries.getWebsitePassword(this.dbConn, uname, website_url, website_uname, (result) => {
+                DataBaseQueries.getWebsitePassword(dbConn.connection, uname, website_url, website_uname, (result) => {
                     if (result === null) {
                         callback(null);
                         return;
@@ -671,7 +646,7 @@ class BackEndManager {
                 let password = PasswordGenerator.generatePassword(16, true, true);
                 console.log(password);
                 let encypted_pwd = AES.encryptData(password, key, iv);
-                DataBaseQueries.addNewPassword(this.dbConn, uname, website_url, website_uname, encypted_pwd, iv, (result) => {
+                DataBaseQueries.addNewPassword(dbConn.connection, uname, website_url, website_uname, encypted_pwd, iv, (result) => {
                     callback(result);
                 });
             });
@@ -682,7 +657,7 @@ class BackEndManager {
     }
 
     #authenticateUser(uname, masterpwd, callback) {
-        DataBaseQueries.getColumsForEncryptingPassword(this.dbConn, uname, (columns) => {
+        DataBaseQueries.getColumsForEncryptingPassword(dbConn.connection, uname, (columns) => {
             if (columns === null) {
                 callback(false);
                 return;
@@ -695,7 +670,7 @@ class BackEndManager {
             let iv = columns["iv"];
             let key = AES.decryptData(encrypted_key, hashed_masterpwd, iv);
 
-            DataBaseQueries.getUserPwdForAuthentication(this.dbConn, uname, (db_hashedhashed_pwd) => {
+            DataBaseQueries.getUserPwdForAuthentication(dbConn.connection, uname, (db_hashedhashed_pwd) => {
                 if (db_hashedhashed_pwd === null) {
                     callback(false);
                     return;
@@ -716,11 +691,11 @@ class BackEndManager {
 
 
     resetPassword(jsonData, callback) {
-        DataBaseQueries.getUnameFromIdentification(this.dbConn, jsonData["email"], (uname) => {
+        DataBaseQueries.getUnameFromIdentification(dbConn.connection, jsonData["email"], (uname) => {
             if (uname === null) {
                 callback(false);
             } else {
-                DataBaseQueries.changeUserToken(this.dbConn, jsonData["email"], token, (result) => {
+                DataBaseQueries.changeUserToken(dbConn.connection, jsonData["email"], token, (result) => {
                     if (result) {
                         let html = '<p>You requested for reset password, kindly use this <a href="https://'+ this.config['frontendSettings']['host'] + ':' + this.config['frontendSettings']['port'] + '/passwordhandler/reset-password?token=' + token + '">link</a> to reset your password</p>'
                         this.sendMail(jsonData["email"], jsonData["subject"], jsonData["msg"], html, callback);
@@ -773,7 +748,7 @@ class BackEndManager {
                 return;
             }
 
-            DataBaseQueries.isSuperAdmin(this.dbConn, super_admin_uname, (result) => {
+            DataBaseQueries.isSuperAdmin(dbConn.connection, super_admin_uname, (result) => {
                 callback(result);
 
             })
@@ -782,7 +757,7 @@ class BackEndManager {
 
     #addNewEmailTokenAdmin(uname, callback) {
         let newToken = TokenGenerator.generateToken(20, true);
-        DataBaseQueries.changeUserEmailTokenAdmin(this.dbConn, uname, newToken, (result) => {
+        DataBaseQueries.changeUserEmailTokenAdmin(dbConn.connection, uname, newToken, (result) => {
             if (result) {
                 callback(newToken);
             }
@@ -794,7 +769,7 @@ class BackEndManager {
     }
 
     verifyAdmin(uname, token, callback) {
-        DataBaseQueries.getAdminToken(this.dbConn, uname, (result) => {
+        DataBaseQueries.getAdminToken(dbConn.connection, uname, (result) => {
             console.log(result);
             if (result instanceof ServerErrors.ServerError) {
                 callback(result);
@@ -813,7 +788,7 @@ class BackEndManager {
     }
 
     verifyEmailTokenAdmin(uname, emailToken, callback) {
-        DataBaseQueries.getAdminEmailToken(this.dbConn, uname, (result) => {
+        DataBaseQueries.getAdminEmailToken(dbConn.connection, uname, (result) => {
             if (result instanceof ServerErrors.ServerError) {
                 callback(result);
                 return;
@@ -827,7 +802,7 @@ class BackEndManager {
                 return;
             }
 
-            DataBaseQueries.cancelAdminEmailToken(this.dbConn, uname, (result) => {
+            DataBaseQueries.cancelAdminEmailToken(dbConn.connection, uname, (result) => {
                 if (result) {
                     console.log("Admin email token has been canceled");
 
@@ -842,7 +817,7 @@ class BackEndManager {
 
     #addNewTokenAdmin(uname, callback) {
         let newToken = TokenGenerator.generateToken(20, true);
-        DataBaseQueries.changeAdminToken(this.dbConn, uname, newToken, (result) => {
+        DataBaseQueries.changeAdminToken(dbConn.connection, uname, newToken, (result) => {
             if (result) {
                 callback(newToken);
             }
@@ -854,7 +829,7 @@ class BackEndManager {
     }
 
     #authenticateAdmin(uname, masterpwd, callback) {
-        DataBaseQueries.getAdminSalt(this.dbConn, uname, (result) => {
+        DataBaseQueries.getAdminSalt(dbConn.connection, uname, (result) => {
             if (result instanceof ServerErrors.ServerError) {
                 callback(result);
                 return;
@@ -863,7 +838,7 @@ class BackEndManager {
             let salt = result;
             let hashedPassword = Hash.hashPlainText(masterpwd, salt);
 
-            DataBaseQueries.getAdminPwdForAuthentication(this.dbConn, uname, (result) => {
+            DataBaseQueries.getAdminPwdForAuthentication(dbConn.connection, uname, (result) => {
                 if (result instanceof ServerErrors.ServerError) {
                     callback(result);
                     return;
@@ -889,7 +864,7 @@ class BackEndManager {
                 return;
             }
 
-            DataBaseQueries.addAdmin(this.dbConn, uname, email, (result) => {
+            DataBaseQueries.addAdmin(dbConn.connection, uname, email, (result) => {
                 if (result !== true) {
                     callback(result);
                     return;
@@ -919,7 +894,7 @@ class BackEndManager {
 
             let salt = Hash.generateSalt();
             let hashedPassword = Hash.hashPlainText(password, salt);
-            DataBaseQueries.addAdminPassword(this.dbConn, uname, hashedPassword, salt, (result) => {
+            DataBaseQueries.addAdminPassword(dbConn.connection, uname, hashedPassword, salt, (result) => {
                 if (result !== true) {
                     callback(result);
                     return;
@@ -937,7 +912,7 @@ class BackEndManager {
                 return;
             }
 
-            DataBaseQueries.checkIpAdmin(this.dbConn, uname, ip, (result) => {
+            DataBaseQueries.checkIpAdmin(dbConn.connection, uname, ip, (result) => {
                 if (result) {
                     this.#addNewTokenAdmin(uname, (result) => {
                         if (result instanceof ServerErrors.ServerError) {
@@ -949,7 +924,7 @@ class BackEndManager {
                         return;
                     });
                 } else {
-                    DataBaseQueries.getEmailFromUnameAdmin(this.dbConn, uname, (result) => {
+                    DataBaseQueries.getEmailFromUnameAdmin(dbConn.connection, uname, (result) => {
                         if (result instanceof ServerErrors.ServerError) {
                             callback(result);
                             return;
@@ -981,7 +956,7 @@ class BackEndManager {
                 return;
             }
 
-            DataBaseQueries.cancelAdminToken(this.dbConn, uname, (result) => {
+            DataBaseQueries.cancelAdminToken(dbConn.connection, uname, (result) => {
                 callback(result);
             });
         });
@@ -994,7 +969,7 @@ class BackEndManager {
                 return;
             }
 
-            DataBaseQueries.addIPAdmin(this.dbConn, uname, ip, (result) => {
+            DataBaseQueries.addIPAdmin(dbConn.connection, uname, ip, (result) => {
                 if (result !== true) {
                     callback(result);
                     return;
@@ -1013,7 +988,7 @@ class BackEndManager {
                 return;
             }
 
-            DataBaseQueries.getEmailFromUnameAdmin(this.dbConn, uname, (result) => {
+            DataBaseQueries.getEmailFromUnameAdmin(dbConn.connection, uname, (result) => {
                 if (result instanceof ServerErrors.ServerError) {
                     callback(result);
                     return;
@@ -1021,7 +996,7 @@ class BackEndManager {
 
                 let email = result;
 
-                DataBaseQueries.isSuperAdmin(this.dbConn, uname, (result) => {
+                DataBaseQueries.isSuperAdmin(dbConn.connection, uname, (result) => {
                     if (result instanceof ServerErrors.ServerError) {
                         callback(result);
                         return;
@@ -1050,7 +1025,7 @@ class BackEndManager {
                 return;
             }
             this.#authenticateAdmin(uname, password, (authentication_result) => {
-                DataBaseQueries.getAttributesForUpdateAdmin(this.dbConn, uname, (result) => {
+                DataBaseQueries.getAttributesForUpdateAdmin(dbConn.connection, uname, (result) => {
                     if (result instanceof ServerErrors.ServerError) {
                         callback(result);
                         return;
@@ -1091,7 +1066,7 @@ class BackEndManager {
                     console.log(new_email);
                     console.log(new_hashed_pwd);
 
-                    DataBaseQueries.updateAdmin(this.dbConn, uname, new_uname, new_email, new_hashed_pwd, (result) => {
+                    DataBaseQueries.updateAdmin(dbConn.connection, uname, new_uname, new_email, new_hashed_pwd, (result) => {
                         callback(result);
                     });
 
@@ -1109,7 +1084,7 @@ class BackEndManager {
                     return;
                 }
 
-                DataBaseQueries.removeAdmin(this.dbConn, uname, (result) => {
+                DataBaseQueries.removeAdmin(dbConn.connection, uname, (result) => {
                     callback(result);
                 });
             });
@@ -1121,7 +1096,7 @@ class BackEndManager {
                     return;
                 }
 
-                DataBaseQueries.removeAdmin(this.dbConn, uname, (result) => {
+                DataBaseQueries.removeAdmin(dbConn.connection, uname, (result) => {
                     callback(result);
                 });
             });
@@ -1135,7 +1110,7 @@ class BackEndManager {
                 return;
             }
 
-            DataBaseQueries.getAllAdmins(this.dbConn, (result) => {
+            DataBaseQueries.getAllAdmins(dbConn.connection, (result) => {
                 if (result instanceof ServerErrors.ServerError) {
                     callback(result);
                     return;
@@ -1151,7 +1126,7 @@ class BackEndManager {
     }
 
     #allAdminsAddIsSuperAdmin(index, admins, callback) {
-        DataBaseQueries.isSuperAdmin(this.dbConn, admins[index]["uname"], (result) => {
+        DataBaseQueries.isSuperAdmin(dbConn.connection, admins[index]["uname"], (result) => {
             if (result instanceof ServerErrors.ServerError) {
                 reject();
                 return;
