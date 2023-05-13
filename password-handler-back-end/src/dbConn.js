@@ -1,9 +1,10 @@
+const fs = require('fs');
 var config = JSON.parse(fs.readFileSync("./src/config.json"));
 var db_config = {
-    host: this.config["databaseConnection"]["host"],
-    user: this.config["databaseConnection"]["user"],
-    password: this.config["databaseConnection"]["password"],
-    database: this.config["databaseConnection"]["database"]
+    host: config["databaseConnection"]["host"],
+    user: config["databaseConnection"]["user"],
+    password: config["databaseConnection"]["password"],
+    database: config["databaseConnection"]["database"]
 };
 
 var connection;
