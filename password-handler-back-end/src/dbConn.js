@@ -9,6 +9,9 @@ var db_config = {
 };
 
 var connection;
+function getConn() {
+    return connection;
+}
 
 function handleDisconnect() {
     connection = MySQL.createConnection(db_config); 
@@ -34,4 +37,4 @@ function handleDisconnect() {
 }
 
 handleDisconnect();
-module.exports = {connection}
+module.exports = {getConn}
