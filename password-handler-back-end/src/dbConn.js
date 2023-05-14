@@ -14,7 +14,7 @@ function getConn() {
 }
 
 function handleDisconnect() {
-    connection = MySQL.createConnection(db_config); 
+    connection = MySQL.createPool(db_config); 
 
     connection.connect(function (err) {             
         if (err) {                                     
