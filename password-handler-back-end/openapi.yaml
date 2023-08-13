@@ -349,6 +349,12 @@ paths:
         explode: false
         schema:
           $ref: '#/components/schemas/Token'
+      requestBody:
+        description: Update an existent user
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Password'
       responses:
         "200":
           description: successful operation
@@ -801,6 +807,12 @@ paths:
         explode: false
         schema:
           $ref: '#/components/schemas/Token'
+      requestBody:
+        description: Update an existent user
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Password'
       responses:
         "200":
           description: successful operation

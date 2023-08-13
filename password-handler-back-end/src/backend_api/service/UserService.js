@@ -114,11 +114,16 @@ exports.createUser = function (body) {
  * userToken Token 
  * no response value expected for this operation
  **/
-exports.deleteUser = function (uname, userToken, admin_uname, admin_token) {
+exports.deleteUser = function (uname, userToken, admin_uname, admin_token, body) {
   return new Promise(function (resolve, reject) {
-    backEndHandler.removeUser(uname, userToken, admin_uname, admin_token, (result) => {
+    let password = body["password"];
+    backEndHandler.removeUser(uname, userToken, admin_uname, admin_token, password, (result) => {
       if (result instanceof ServerErrors.InternalServerError) {
         reject(500);
+        return;
+      }
+      if (result instanceof ServerErrors.InvalidLogin) {
+        reject(401);
         return;
       }
       if (result instanceof ServerErrors.InvalidToken) {
@@ -276,7 +281,7 @@ exports.updateUser = function (body, uname, userToken) {
     let newPassword = body["newPassword"];
     backEndHandler.updateUser(uname, newUname, newEmail, password, newPassword, userToken, (result) => {
       if (result instanceof ServerErrors.InvalidLogin) {
-        reject(403);
+        reject(401);
         return;
       }
       if (result instanceof ServerErrors.InvalidToken) {

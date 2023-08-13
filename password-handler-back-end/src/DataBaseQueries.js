@@ -165,7 +165,7 @@ class DataBaseQueries {
     }
 
     static getUserToken(dbConn, uname, callback){
-        var sql = `SELECT token FROM users WHERE users.uname = "${uname}" AND CURRENT_TIMESTAMP() - token_timestamp < 3600`;
+        var sql = `SELECT token FROM users WHERE users.uname = "${uname}"`;
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
@@ -205,7 +205,7 @@ class DataBaseQueries {
     }
 
     static getUserEmailToken(dbConn, uname, callback){
-        var sql = `SELECT email_token FROM users WHERE users.uname = "${uname}" AND CURRENT_TIMESTAMP() - email_token_timestamp < 3600`;
+        var sql = `SELECT email_token FROM users WHERE users.uname = "${uname}"`;
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
@@ -428,7 +428,7 @@ class DataBaseQueries {
     }
 
     static getAdminEmailToken(dbConn, uname, callback){
-        var sql = `SELECT email_token FROM admins WHERE admins.uname = "${uname}" AND CURRENT_TIMESTAMP() - email_token_timestamp < 3600`;
+        var sql = `SELECT email_token FROM admins WHERE admins.uname = "${uname}"`;
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
@@ -500,7 +500,7 @@ class DataBaseQueries {
     }
 
     static getAdminToken(dbConn, uname, callback){
-        var sql = `SELECT token FROM admins WHERE admins.uname = "${uname}" AND CURRENT_TIMESTAMP() - admins.token_timestamp < 3600`;
+        var sql = `SELECT token FROM admins WHERE admins.uname = "${uname}"`;
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
@@ -949,6 +949,34 @@ class DataBaseQueries {
             
            
         });
+    }
+
+    static clearOutDatedTokens(dbConn) {
+        console.log("Clearing tokens...");
+        const timeInterval = 'DATE_SUB(NOW(), INTERVAL 5 MINUTE)';
+        var sql = `UPDATE users SET token = NULL WHERE token_timestamp <= ${timeInterval}`;
+        dbConn.query(sql);
+
+        var sql = `UPDATE users SET email_token = NULL WHERE email_token_timestamp <= ${timeInterval}`;
+        dbConn.query(sql);
+
+        var sql = `UPDATE admins SET token = NULL WHERE token_timestamp <= ${timeInterval}`;
+        dbConn.query(sql);
+
+        var sql = `UPDATE admins SET email_token = NULL WHERE email_token_timestamp <= ${timeInterval}`;
+        dbConn.query(sql);
+
+    }
+
+    static pergeIps(dbConn) {
+        console.log("Perging ips...");
+        const timeInterval = 'DATE_SUB(NOW(), INTERVAL 1 WEEK)';
+        var sql = `DELETE FROM ips WHERE timestamp <= ${timeInterval}`;
+        dbConn.query(sql);
+
+        var sql = `DELETE FROM admin_ips WHERE timestamp <= ${timeInterval}`;
+        dbConn.query(sql);
+
     }
     
 }

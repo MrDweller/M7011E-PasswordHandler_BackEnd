@@ -17,6 +17,13 @@ class BackEndManager {
     constructor() {
         this.config = JSON.parse(fs.readFileSync("./src/config.json"));
 
+        setInterval(() => {
+            DataBaseQueries.clearOutDatedTokens(dbConn.getConn());
+        }, 30000);
+
+        setInterval(() => {
+            DataBaseQueries.pergeIps(dbConn.getConn());
+        }, 60000000);
     }
 
     addUser(uname, email, masterpwd, userIP, callback) {
@@ -80,32 +87,44 @@ class BackEndManager {
         });
     }
 
-    removeUser(uname, token, admin_uname, admin_token, callback) {
+    removeUser(uname, token, admin_uname, admin_token, password, callback) {
         if (admin_uname && admin_token) {
             this.verifyAdmin(admin_uname, admin_token, (result) => {
-                if (result !== true) {
-                    callback(result);
-                    return;
-                }
-
-                DataBaseQueries.removeUser(dbConn.getConn(), uname, (result) => {
-                    callback(result);
+                this.#authenticateAdmin(admin_uname, password, (authentication_result, dbUname, key) => {
+                    if (authentication_result !== true) {
+                        callback(new ServerErrors.InvalidLogin());
+                        return;
+                    }
+                    if (result !== true) {
+                        callback(result);
+                        return;
+                    }
+    
+                    DataBaseQueries.removeUser(dbConn.getConn(), uname, (result) => {
+                        callback(result);
+                    });
                 });
             });
         }
         else {
             this.verifyUser(uname, token, (result) => {
-                if (result instanceof ServerErrors.ServerError) {
-                    callback(result);
-                    return;
-                }
-                if (result !== true) {
-                    callback(new ServerErrors.InternalServerError());
-                    return;
-                }
-    
-                DataBaseQueries.removeUser(dbConn.getConn(), uname, (result) => {
-                    callback(result);
+                this.#authenticateUser(uname, password, (authentication_result, dbUname, key) => {
+                    if (authentication_result !== true) {
+                        callback(new ServerErrors.InvalidLogin());
+                        return;
+                    }
+                    if (result instanceof ServerErrors.ServerError) {
+                        callback(result);
+                        return;
+                    }
+                    if (result !== true) {
+                        callback(new ServerErrors.InternalServerError());
+                        return;
+                    }
+        
+                    DataBaseQueries.removeUser(dbConn.getConn(), uname, (result) => {
+                        callback(result);
+                    });
                 });
     
             });
@@ -419,6 +438,10 @@ class BackEndManager {
                 return;
             }
             this.#authenticateUser(uname, password, (authentication_result, dbUname, key) => {
+                if (authentication_result !== true) {
+                    callback(new ServerErrors.InvalidLogin());
+                    return;
+                }
                 DataBaseQueries.getColumsForEncryptingPassword(dbConn.getConn(), uname, (columns) => {
                     if (columns === null) {
                         callback(new ServerErrors.InternalServerError());
@@ -458,10 +481,6 @@ class BackEndManager {
                                 new_salt_1 = firstSalt;
                                 new_salt_2 = secondSalt;
                                 new_encrypted_key = encrypted_key;
-                            }
-                            else if (authentication_result !== true) {
-                                callback(new ServerErrors.InvalidLogin());
-                                return;
                             }
                             else {
                                 let ivKey = columns["iv"];
@@ -1075,28 +1094,40 @@ class BackEndManager {
         });
     }
 
-    deleteAdmin(uname, admin_token, super_admin_uname, super_admin_token, callback) {
+    deleteAdmin(uname, admin_token, super_admin_uname, super_admin_token, password, callback) {
         if (super_admin_uname && super_admin_token) {
             this.#verifySuperAdmin(super_admin_uname, super_admin_token, (result) => {
-                if (result !== true) {
-                    callback(result);
-                    return;
-                }
+                this.#authenticateAdmin(super_admin_uname, password, (authentication_result, dbUname, key) => {
+                    if (authentication_result !== true) {
+                        callback(new ServerErrors.InvalidLogin());
+                        return;
+                    }
+                    if (result !== true) {
+                        callback(result);
+                        return;
+                    }
 
-                DataBaseQueries.removeAdmin(dbConn.getConn(), uname, (result) => {
-                    callback(result);
+                    DataBaseQueries.removeAdmin(dbConn.getConn(), uname, (result) => {
+                        callback(result);
+                    });
                 });
             });
         }
         else {
             this.verifyAdmin(uname, admin_token, (result) => {
-                if (result !== true) {
-                    callback(result);
-                    return;
-                }
+                this.#authenticateAdmin(uname, password, (authentication_result, dbUname, key) => {
+                    if (authentication_result !== true) {
+                        callback(new ServerErrors.InvalidLogin());
+                        return;
+                    }
+                    if (result !== true) {
+                        callback(result);
+                        return;
+                    }
 
-                DataBaseQueries.removeAdmin(dbConn.getConn(), uname, (result) => {
-                    callback(result);
+                    DataBaseQueries.removeAdmin(dbConn.getConn(), uname, (result) => {
+                        callback(result);
+                    });
                 });
             });
         }

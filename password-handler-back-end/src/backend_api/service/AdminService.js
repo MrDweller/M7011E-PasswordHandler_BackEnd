@@ -100,9 +100,14 @@ exports.addAdminPassword = function(body, uname, email_token) {
  * superAdminToken Token  (optional)
  * no response value expected for this operation
  **/
-exports.deleteAdmin = function(uname,adminToken, super_admin_uname, super_admin_token) {
+exports.deleteAdmin = function(uname,adminToken, super_admin_uname, super_admin_token, body) {
   return new Promise(function(resolve, reject) {
-    backEndHandler.deleteAdmin(uname, adminToken, super_admin_uname, super_admin_token, (result) => {
+    let password = body["password"];
+    backEndHandler.deleteAdmin(uname, adminToken, super_admin_uname, super_admin_token, password, (result) => {
+      if (result instanceof ServerErrors.InvalidLogin) {
+        reject(401);
+        return;
+      }
       if (result instanceof ServerErrors.InvalidToken) {
         reject(403);
         return;

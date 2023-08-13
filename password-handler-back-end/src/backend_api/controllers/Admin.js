@@ -33,8 +33,10 @@ module.exports.addAdminPassword = function addAdminPassword (req, res, next, bod
     });
 };
 
-module.exports.deleteAdmin = function deleteAdmin (req, res, next, uname, admin_token, super_admin_uname, super_admin_token) {
-  Admin.deleteAdmin(uname, admin_token, super_admin_uname, super_admin_token)
+module.exports.deleteAdmin = function deleteAdmin (req, res, next, body, uname, admin_token, super_admin_uname, super_admin_token) {
+  console.log(body);
+  console.log(uname);
+  Admin.deleteAdmin(uname, admin_token, super_admin_uname, super_admin_token, body)
     .then(function (response) {
       utils.writeHeaders(res, null, response);
     })

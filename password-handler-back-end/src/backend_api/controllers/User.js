@@ -23,8 +23,8 @@ module.exports.createUser = function createUser (req, res, next, body) {
     });
 };
 
-module.exports.deleteUser = function deleteUser (req, res, next, uname, user_token, admin_uname, admin_token) {
-  User.deleteUser(uname, user_token, admin_uname, admin_token)
+module.exports.deleteUser = function deleteUser (req, res, next, body, uname, user_token, admin_uname, admin_token) {
+  User.deleteUser(uname, user_token, admin_uname, admin_token, body)
     .then(function (response) {
       utils.writeHeaders(res, null, response);
     })
@@ -86,21 +86,24 @@ module.exports.updateUser = function updateUser (req, res, next, body, uname, us
 };
 
 module.exports.uploadPFP = function uploadPFP (req, res, next, uname, user_token) {
-  User.uploadPFP(uname, user_token)
-    .then(function (response) {
-      utils.writeJson(res, response);
-    })
-    .catch(function (response) {
-      utils.writeErrorCode(res, response);
-    });
+  // User.uploadPFP(uname, user_token)
+  //   .then(function (response) {
+  //     utils.writeJson(res, response);
+  //   })
+  //   .catch(function (response) {
+  //     utils.writeErrorCode(res, response);
+  //   });
+  utils.writeErrorCode(res, 404);
+
 };
 
 module.exports.getPFP = function getPFP (req, res, next, uname, user_token) {
-  User.getPFP(uname, user_token)
-    .then(function (response) {
-      utils.writeJson(res, response);
-    })
-    .catch(function (response) {
-      utils.writeErrorCode(res, response);
-    });
+  // User.getPFP(uname, user_token)
+  //   .then(function (response) {
+  //     utils.writeJson(res, response);
+  //   })
+  //   .catch(function (response) {
+  //     utils.writeErrorCode(res, response);
+  //   });
+  utils.writeErrorCode(res, 404);
 };
