@@ -457,7 +457,7 @@ class DataBaseQueries {
     static addIPAdmin(dbConn, uname, ip, callback) {
         var sql = "INSERT INTO `admin_ips` VALUES ? ";
         var values = [
-            [uname, ip]
+            [uname, ip, null]
         ];
         dbConn.query(sql, [values], (err, result) => {
             if (err) {
@@ -674,10 +674,9 @@ class DataBaseQueries {
     }
 
     static addIP(dbConn, uname, ip, callback) {
-        TokenGenerator.ge
         var sql = "INSERT INTO `ips` VALUES ? ";
         var values = [
-            [uname, ip]
+            [uname, ip, null]
         ];
         dbConn.query(sql, [values], (err, result) => {
             if (err) {
