@@ -53,7 +53,8 @@ INSERT INTO `admins` (`uname`, `email`, `hashed_pwd`, `salt`, `token`, `token_ti
 
 CREATE TABLE `admin_ips` (
   `uname` varchar(128) NOT NULL,
-  `ip` varchar(128) NOT NULL
+  `ip` varchar(128) NOT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -75,7 +76,8 @@ CREATE TABLE `feedback` (
 
 CREATE TABLE `ips` (
   `uname` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
-  `ip` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL
+  `ip` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=COMPACT;
 
 -- --------------------------------------------------------
