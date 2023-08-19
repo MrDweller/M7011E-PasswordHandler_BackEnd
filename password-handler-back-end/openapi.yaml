@@ -444,6 +444,86 @@ paths:
         "404":
           description: Not found
       x-swagger-router-controller: Password
+    patch:
+      tags:
+      - password
+      summary: Regenerate password
+      description: This regenerates a password and retrives it.
+      operationId: regeneratePassword
+      parameters:
+      - name: uname
+        in: path
+        description: The uname for the user
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: user-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      requestBody:
+        description: ""
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebsitePasswordAuthentication'
+      responses:
+        "200":
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebsitePassword'
+        "400":
+          description: Bad request
+        "403":
+          description: Invalid credentials supplied
+        "404":
+          description: Not found
+      x-swagger-router-controller: Password
+    delete:
+      tags:
+      - password
+      summary: Delete password
+      description: This deletes a password.
+      operationId: deletePassword
+      parameters:
+      - name: uname
+        in: path
+        description: The uname for the user
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: user-token
+        in: header
+        required: true
+        style: simple
+        explode: false
+        schema:
+          $ref: '#/components/schemas/Token'
+      requestBody:
+        description: ""
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebsitePasswordAuthentication'
+      responses:
+        "200":
+          description: successful operation
+        "400":
+          description: Bad request
+        "403":
+          description: Invalid credentials supplied
+        "404":
+          description: Not found
+      x-swagger-router-controller: Password
     post:
       tags:
       - password

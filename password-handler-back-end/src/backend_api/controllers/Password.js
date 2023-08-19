@@ -22,3 +22,23 @@ module.exports.decryptPassword = function decryptPassword (req, res, next, body,
       utils.writeHeaders(res, null, response);
     });
 };
+
+module.exports.regeneratePassword = function regeneratePassword (req, res, next, body, uname, user_token) {
+  Password.regeneratePassword(body, uname, user_token)
+    .then(function (response) {
+      utils.writeJson(res, response);
+    })
+    .catch(function (response) {
+      utils.writeHeaders(res, null, response);
+    });
+};
+
+module.exports.deletePassword = function deletePassword (req, res, next, body, uname, user_token) {
+  Password.deletePassword(body, uname, user_token)
+    .then(function (response) {
+      utils.writeHeaders(res, null, response);
+    })
+    .catch(function (response) {
+      utils.writeHeaders(res, null, response);
+    });
+};

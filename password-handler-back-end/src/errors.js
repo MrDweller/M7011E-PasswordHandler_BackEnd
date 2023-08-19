@@ -12,6 +12,8 @@ class InvalidLogin extends ServerError {}
   
 class NoRowsEffectedInDb extends ServerError {}
 
+class NoPasswordFound extends ServerError {}
+
 class InternalServerError extends ServerError {}
 
 class DuplicateUname extends ServerError {}
@@ -27,6 +29,7 @@ module.exports = {
     WrongMasterPassword: WrongMasterPassword,
     InvalidLogin: InvalidLogin,
     NoRowsEffectedInDb: NoRowsEffectedInDb,
+    NoPasswordFound: NoPasswordFound,
     InternalServerError: InternalServerError,
     DuplicateUname: DuplicateUname,
     DuplicateEmail: DuplicateEmail,

@@ -638,6 +638,85 @@ class BackEndManager {
 
     }
 
+    regeneratePassword(masterpwd, website_url, website_uname, uname, token, callback) {
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
+                return;
+            }
+
+            this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
+                if (result !== true) {
+                    callback(null);
+                    return;
+                }
+                let iv = AES.generateIv();
+                let password = PasswordGenerator.generatePassword(16, true, true);
+                let encypted_pwd = AES.encryptData(password, key, iv);
+                DataBaseQueries.regeneratePassword(dbConn.getConn(), uname, website_url, website_uname, encypted_pwd, iv, (result) => {
+                    if (result === null) {
+                        callback(null);
+                        return;
+                    }
+                    DataBaseQueries.getWebsitePassword(dbConn.getConn(), uname, website_url, website_uname, (result) => {
+                        if (result === null) {
+                            callback(new ServerErrors.NoPasswordFound());
+                            return;
+                        }
+                        let password = AES.decryptData(result["encrypted_pwd"], key, result["iv"]);
+                        callback(password.toString());
+                    });
+                });
+            });
+
+        });
+
+    }
+
+    deletePassword(masterpwd, website_url, website_uname, uname, token, callback) {
+        // let decryptedData = jsonData;
+        // let token = decryptedData["token"];
+        // let masterpwd = decryptedData["password"];
+        // let website_url = decryptedData["website_url"];
+        // let website_uname = decryptedData["website_uname"];
+        this.verifyUser(uname, token, (result) => {
+            if (result instanceof ServerErrors.ServerError) {
+                callback(result);
+                return;
+            }
+            if (result !== true) {
+                callback(new ServerErrors.InternalServerError());
+                return;
+            }
+
+            this.#authenticateUser(uname, masterpwd, (result, uname, key) => {
+                if (result !== true) {
+                    callback(null);
+                    return;
+                }
+                DataBaseQueries.getWebsitePassword(dbConn.getConn(), uname, website_url, website_uname, (result) => {
+                    if (result === null) {
+                        callback(new ServerErrors.NoPasswordFound());
+                        return;
+                    }
+                    DataBaseQueries.deletePassword(dbConn.getConn(), uname, website_url, website_uname, (result) => {
+                        if (result === null) {
+                            callback(null);
+                            return;
+                        }
+                        callback(result);
+                    });
+                });
+            });
+
+        });
+
+    }
+
     addPassword(masterpwd, website_url, website_uname, uname, token, callback) {
         // let decryptedData = jsonData;
         // let token = decryptedData["token"];

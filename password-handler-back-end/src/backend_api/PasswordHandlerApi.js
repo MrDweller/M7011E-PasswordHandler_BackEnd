@@ -17,7 +17,7 @@ class PasswordHandlerApi {
 
         var corsOptions = {
             origin: '*',
-            methods: ['GET', 'POST', 'PUT', 'DELETE'],
+            methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
             exposedHeaders:  '*',
             optionsSuccessStatus: 204 // For legacy browser support
         }

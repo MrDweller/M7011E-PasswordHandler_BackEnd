@@ -657,14 +657,26 @@ class DataBaseQueries {
         });
     }
 
-    static changePasswordWebsite(dbConn, uname, new_encrypted_pwd, callback) {
-        var uname = uname;
-        var encrypted_pwd = new_encrypted_pwd.toString("base64");
-        var sql = `UPDATE passwords SET ecrypted_pwd = "${encrypted_pwd}" WHERE passwords.uname = "${uname}"`;
+    static regeneratePassword(dbConn, uname, website_url, website_uname, encypted_pwd, iv, callback) {
+        var sql = `UPDATE passwords SET passwords.encrypted_pwd="${encypted_pwd.toString("base64")}", passwords.iv="${iv.toString("base64")}"  WHERE passwords.uname = "${uname}" AND passwords.website_url = "${website_url}" AND passwords.website_uname = "${website_uname}"`;
         dbConn.query(sql, (err, result) => {
             if (err) {
                 console.log(err);
-                callback(false);
+                callback(new ServerErrors.InternalServerError());
+            }
+            else {
+                console.log("Number affected rows " + result.affectedRows);
+                callback(true);
+            }
+        });
+    }
+
+    static deletePassword(dbConn, uname, website_url, website_uname, callback) {
+        var sql = `DELETE FROM passwords WHERE passwords.uname = "${uname}" AND passwords.website_url = "${website_url}" AND passwords.website_uname = "${website_uname}"`;
+        dbConn.query(sql, (err, result) => {
+            if (err) {
+                console.log(err);
+                callback(new ServerErrors.InternalServerError());
             }
             else {
                 console.log("Number affected rows " + result.affectedRows);
